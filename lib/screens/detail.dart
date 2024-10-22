@@ -1,45 +1,64 @@
 import 'package:flutter/material.dart';
+import 'package:travelvn/widgets/home_bottom_bar.dart';
 
-// void main() {
-//   runApp(Detail());
-// }
-
-// class Detail extends StatelessWidget {
-//   const Detail({super.key});
-//   @override
-//   Widget build(BuildContext context) {
-//     return MaterialApp(
-//       debugShowCheckedModeBanner: false,
-//       home: MyHomePage(),
-//     );
-//   }
-// }
-
-class Detail extends StatelessWidget {
+class Detail extends StatefulWidget {
   const Detail({super.key});
+  
+
+
+
+  @override
+  _DetailState createState() => _DetailState();
+}
+
+class _DetailState extends State<Detail> {
+  bool isExpanded = false; // Biến để lưu trạng thái xem thêm
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: Colors.black),
-          onPressed: () {},
-        ),
-        actions: [
-          IconButton(
-            icon: Icon(Icons.favorite_border, color: Colors.black),
-            onPressed: () {},
-          ),
-        ],
-      ),
+      // appBar: AppBar(
+      //   backgroundColor: Colors.white,
+      //   elevation: 0,
+      //   leading: IconButton(
+      //     icon: Icon(Icons.arrow_back, color: Colors.black),
+      //     onPressed: () {},
+      //   ),
+      //   actions: [
+      //     IconButton(
+      //       icon: Icon(Icons.favorite_border, color: Colors.black),
+      //       onPressed: () {},
+      //     ),
+      //   ],
+      // ),
       body: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            
-            Image.asset('assets/images/anhdau.png', fit: BoxFit.cover),
+            Stack(
+              children: [
+                Image.asset(
+                  'assets/images/anhdau1.png',
+                  fit: BoxFit.cover,
+                  width: double.infinity,
+                  height: 200,
+                ),
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: GestureDetector(
+                    onTap: () {
+                      print('Đã nhấn yêu thích');
+                    },
+                    child: Icon(
+                      Icons.favorite_border,
+                      color: const Color.fromARGB(255, 252, 252, 252),
+                      size: 32,
+                    ),
+                  ),
+                ),
+              ],
+            ),
             Padding(
               padding: const EdgeInsets.all(16.0),
               child: Text(
@@ -62,21 +81,73 @@ class Detail extends StatelessWidget {
             ),
             Padding(
               padding: const EdgeInsets.all(16.0),
-              child: Text(
-                'GIỚI THIỆU CHI TIẾT',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'GIỚI THIỆU CHI TIẾT',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                  SizedBox(height: 5),
+                  Text(
+                    'Địa điểm',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                  SizedBox(height: 8),
+                  Text(
+                    'Huyện Cù Lao Dung nằm ở phía đông tỉnh Sóc Trăng, nằm giữa tỉnh Sóc Trăng và tỉnh Trà Vinh, nhưng thực sự huyện là bao gồm 3 hòn cù lao nhỏ góp lại. Đây là một địa điểm đẹp và có nhiều cảnh quan thiên nhiên.',
+                    style: TextStyle(fontSize: 14, color: Colors.black87),
+                  ),
+                  if (isExpanded) ...[
+                    SizedBox(height: 8),
+                    Text(
+                      'Lịch sử',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                    SizedBox(height: 8),
+                    Text(
+                      'Trước năm 2002, huyện Cù Lao Dung thuộc huyện Long Phú, tỉnh Sóc Trăng. Ngày 11 tháng 1 năm 2002, Chính phủ ban hành Nghị định thành lập huyện Cù Lao Dung...',
+                      style: TextStyle(fontSize: 14, color: Colors.black87),
+                    ),
+                    SizedBox(height: 8),
+                    Text(
+                      'Văn Hóa ẩm thực',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                    SizedBox(height: 8),
+                    Text(
+                      'Huyện Cù Lao Dung có nền văn hóa ẩm thực phong phú với nhiều món ăn đặc trưng của vùng đồng bằng sông Cửu Long.',
+                      style: TextStyle(fontSize: 14, color: Colors.black87),
+                    ),
+                    SizedBox(height: 8),
+                    Text(
+                      'Địa điểm nổi bật',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                    SizedBox(height: 8),
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: [
+                          buildImageTile('assets/images/anh1.png', 'Đền thờ Bác Hồ'),
+                          SizedBox(width: 8),
+                          buildImageTile('assets/images/anh2.png', 'Cầu Mỹ Thuận'),
+                          SizedBox(width: 8),
+                          buildImageTile('assets/images/anh3.png', 'Chợ nổi Cái Răng'),
+                        ],
+                      ),
+                    ),
+                  ],
+                  TextButton(
+                    onPressed: () {
+                      setState(() {
+                        isExpanded = !isExpanded;
+                      });
+                    },
+                    child: Text(isExpanded ? 'Thu gọn' : '...Xem thêm'),
+                  ),
+                ],
               ),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: Text(
-                'Huyện Cù Lao Dung nằm ở phía đông tỉnh Sóc Trăng, nằm giữa tỉnh Sóc Trăng và tỉnh Trà Vinh, nhưng thực sự huyện là bao gồm 3 hòn cù lao nhỏ góp lại.',
-                style: TextStyle(fontSize: 14, color: Colors.black87),
-              ),
-            ),
-            TextButton(
-              onPressed: () {},
-              child: Text('...Đọc thêm'),
             ),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
@@ -150,33 +221,35 @@ class Detail extends StatelessWidget {
           ],
         ),
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        type: BottomNavigationBarType.fixed,
-        items: [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: 'Home',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.article),
-            label: 'Blogs',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.favorite_border),
-            label: 'Like',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person),
-            label: 'Profile',
-          ),
-        ],
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {},
-        label: Text('Thêm kế hoạch'),
-        icon: Icon(Icons.add),
-      ),
-    );
+      // bottomNavigationBar: BottomNavigationBar(
+      //   type: BottomNavigationBarType.fixed,
+      //   items: [
+      //     BottomNavigationBarItem(
+      //       icon: Icon(Icons.home),
+      //       label: 'Home',
+      //     ),
+      //     BottomNavigationBarItem(
+      //       icon: Icon(Icons.article),
+      //       label: 'Blogs',
+      //     ),
+      //     BottomNavigationBarItem(
+      //       icon: Icon(Icons.favorite_border),
+      //       label: 'Like',
+      //     ),
+      //     BottomNavigationBarItem(
+      //       icon: Icon(Icons.person),
+      //       label: 'Profile',
+      //     ),
+      //   ],
+      // ),
+        floatingActionButton: FloatingActionButton.extended(
+    onPressed: () {},
+    label: Text('Thêm kế hoạch'),
+    icon: Icon(Icons.add),
+  ),
+  bottomNavigationBar: HomeBottomBar(), // Sử dụng HomeBottomBar ở đây
+)
+    ;
   }
 
   Widget buildRatingRow(int starCount, double progress) {
@@ -198,39 +271,73 @@ class Detail extends StatelessWidget {
     );
   }
 
-  Widget buildCommentSection(String name, String time, String avatar, int rating, String comment) {
+  Widget buildCommentSection(String name, String time, String avatarPath, int rating, String comment) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
-      child: Column(
+      padding: const EdgeInsets.all(16.0),
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          ListTile(
-            leading: CircleAvatar(
-              backgroundImage: AssetImage(avatar),
-            ),
-            title: Text(name),
-            subtitle: Text(time),
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: List.generate(rating, (index) {
-                return Icon(Icons.star, color: Colors.blue, size: 16);
-              }),
+          ClipOval(
+            child: Image.asset(
+              avatarPath,
+              width: 40,
+              height: 40,
+              fit: BoxFit.cover,
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0),
-            child: Text(comment),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
-            child: TextButton(
-              onPressed: () {},
-              child: Text('Trả lời', style: TextStyle(color: Colors.blue)),
+          SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Text(
+                      name,
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    SizedBox(width: 8),
+                    Text(
+                      time,
+                      style: TextStyle(color: Colors.black54),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 4),
+                Row(
+                  children: List.generate(rating, (index) {
+                    return Icon(Icons.star, color: Colors.blue);
+                  })..addAll(List.generate(5 - rating, (index) {
+                    return Icon(Icons.star_border, color: Colors.blue);
+                  })),
+                ),
+                SizedBox(height: 4),
+                Text(comment),
+              ],
             ),
           ),
-          Divider(),
         ],
       ),
     );
+  }
+
+  Widget buildImageTile(String imagePath, String title) {
+    return Column(
+      children: [
+        ClipRRect(
+          borderRadius: BorderRadius.circular(8.0),
+          child: Image.asset(
+            imagePath,
+            width: 100,
+            height: 100,
+            fit: BoxFit.cover,
+          ),
+        ),
+        SizedBox(height: 4),
+        Text(title, style: TextStyle(fontSize: 12)),
+      ],
+      
+    );
+    
   }
 }

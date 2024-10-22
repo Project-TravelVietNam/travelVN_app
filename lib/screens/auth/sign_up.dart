@@ -26,7 +26,7 @@ class _SignUpState extends State<SignUp> {
     emailController.dispose();
     passwordController.dispose();
     confirmPasswordController.dispose();
-    super.dispose();
+    super.dispose();                      
   }
 
   void signUpUser() async {
