@@ -247,7 +247,7 @@ class _DetailState extends State<Detail> {
     label: Text('Thêm kế hoạch'),
     icon: Icon(Icons.add),
   ),
-  bottomNavigationBar: HomeBottomBar(), // Sử dụng HomeBottomBar ở đây
+  bottomNavigationBar: HomeBottomBar(currentIndex: 3), // Sử dụng HomeBottomBar ở đây
 )
     ;
   }

@@ -8,7 +8,7 @@ class DetailsLocation extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       body: DetailPage(),
-      bottomNavigationBar: HomeBottomBar(),  // Di chuyển bottomNavigationBar vào đây
+      bottomNavigationBar: HomeBottomBar(currentIndex: 3),  // Di chuyển bottomNavigationBar vào đây
     );
   }
 }

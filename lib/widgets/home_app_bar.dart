@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 class HomeAppBar extends StatelessWidget {
   const HomeAppBar({super.key});
 
-//Đây là header của app
+  // This is the header of the app
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -11,45 +11,49 @@ class HomeAppBar extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          InkWell(
-            onTap: () {
-              
-            },
-            child: Container (
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                boxShadow: const [
-                  BoxShadow(
-                  color: Colors.black26,
-                  blurRadius: 6,
-                )
-                ],
-                borderRadius: BorderRadius.circular(15)
-              ),
-              child: const Icon(
-                Icons.sort_rounded,
-                size: 28,
-              )
+          // Displaying styled text for "Travel VietNam"
+          Text.rich(
+            TextSpan(
+              children: [
+                TextSpan(
+                  text: "Travel",
+                  style: TextStyle(
+                    color: Colors.blue,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                TextSpan(
+                  text: "VietNam",
+                  style: TextStyle(
+                    color: Colors.red,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
             ),
-          ), 
+          ),
+          // Location and text next to it
           Row(
             children: [
-                Icon(Icons.location_on, 
+              Icon(
+                Icons.location_on,
                 color: Colors.blueAccent,
-                ), 
-                Text(
-                  "HCM, Việt Nam",
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w500,
-                  ),
-                )
+              ),
+              Text(
+                "HCM, Việt Nam",
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
             ],
-          ), 
+          ),
+          // Search button
           InkWell(
-            onTap:() {
-              
+            onTap: () {
+              // Add search functionality here
             },
             child: Container(
               padding: EdgeInsets.all(10),
@@ -58,20 +62,19 @@ class HomeAppBar extends StatelessWidget {
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black26,
-                    blurRadius: 6
-                  )
+                    blurRadius: 6,
+                  ),
                 ],
                 borderRadius: BorderRadius.circular(15),
               ),
               child: Icon(
                 Icons.search,
-                size: 28,
+                size: 18,
               ),
             ),
-          )
+          ),
         ],
       ),
-
     );
   }
 }

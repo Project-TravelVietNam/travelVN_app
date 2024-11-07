@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:travelvn/widgets/home_app_bar.dart';
+import 'package:travelvn/widgets/home_app_top.dart';
 import 'package:travelvn/widgets/home_bottom_bar.dart';
 import 'package:travelvn/widgets/table_calendar.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -60,11 +61,11 @@ class _HomePageState extends State<HomePage> {
   }
 
   // Nếu quyền đã được cấp, tiếp tục lấy vị trí
-  Position position = await Geolocator.getCurrentPosition(
-      desiredAccuracy: LocationAccuracy.high);
-  setState(() {
-    _currentPosition = LatLng(position.latitude, position.longitude);
-  });
+  // Position position = await Geolocator.getCurrentPosition(
+  //     desiredAccuracy: LocationAccuracy.high);
+  // setState(() {
+  //   _currentPosition = LatLng(position.latitude, position.longitude);
+  // });
 }
 
   @override
@@ -76,6 +77,7 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      //appBar: HomeAppTop(),
       appBar: const PreferredSize(preferredSize: Size.fromHeight(90.0), child: HomeAppBar()),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -92,7 +94,7 @@ class _HomePageState extends State<HomePage> {
                       child: Text(
                       "Địa điểm nổi bật",
                       style: TextStyle(
-                        fontSize: 24,
+                        fontSize: 18,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -217,7 +219,7 @@ class _HomePageState extends State<HomePage> {
                       child: Text(
                       "Bài Review",
                       style: TextStyle(
-                        fontSize: 24,
+                        fontSize: 18,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -235,7 +237,7 @@ class _HomePageState extends State<HomePage> {
                       child: Text(
                       "Lịch của tháng",
                       style: TextStyle(
-                        fontSize: 24,
+                        fontSize: 18,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -304,7 +306,7 @@ class _HomePageState extends State<HomePage> {
                         child: Text(
                           "Bản đồ",
                           style: TextStyle(
-                            fontSize: 24,
+                            fontSize: 18,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -316,62 +318,62 @@ class _HomePageState extends State<HomePage> {
                 
                 // Google Map Widget
                 // Widget Google Map
-                Container(
-                  height: 200,
-                  margin: const EdgeInsets.symmetric(horizontal: 15),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(15),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black26,
-                        blurRadius: 4,
-                        offset: Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(15),
-                    child: GestureDetector(
-                      onTap: () async {
-                        // Đảm bảo vị trí hiện tại có sẵn
-                        if (_currentPosition.latitude != 0 && _currentPosition.longitude != 0) {
-                          String googleMapsUrl = "https://www.google.com/maps/search/?api=1&query=${_currentPosition.latitude},${_currentPosition.longitude}";
-                          if (await canLaunch(googleMapsUrl)) {
-                            await launch(googleMapsUrl);
-                          } else {
-                            print('Không thể mở Google Maps.');
-                          }
-                        } else {
-                          print('Vị trí hiện tại không có sẵn.');
-                        }
-                      },
-                      child: GoogleMap(
-                        initialCameraPosition: CameraPosition(
-                          target: _currentPosition,
-                          zoom: 16,
-                        ),
-                        onMapCreated: (controller) {
-                          _mapController = controller;
-                          print('Google Map đã được tạo thành công');
-                        },
-                        myLocationEnabled: true,
-                        markers: {
-                          Marker(
-                            markerId: MarkerId("current_location"),
-                            position: _currentPosition,
-                          ),
-                        },
-                      ),
-                    ),
-                  ),
-                ),
+                // Container(
+                //   height: 200,
+                //   margin: const EdgeInsets.symmetric(horizontal: 15),
+                //   decoration: BoxDecoration(
+                //     color: Colors.white,
+                //     borderRadius: BorderRadius.circular(15),
+                //     boxShadow: [
+                //       BoxShadow(
+                //         color: Colors.black26,
+                //         blurRadius: 4,
+                //         offset: Offset(0, 2),
+                //       ),
+                //     ],
+                //   ),
+                //   child: ClipRRect(
+                //     borderRadius: BorderRadius.circular(15),
+                //     child: GestureDetector(
+                //       onTap: () async {
+                //         // Đảm bảo vị trí hiện tại có sẵn
+                //         if (_currentPosition.latitude != 0 && _currentPosition.longitude != 0) {
+                //           String googleMapsUrl = "https://www.google.com/maps/search/?api=1&query=${_currentPosition.latitude},${_currentPosition.longitude}";
+                //           if (await canLaunch(googleMapsUrl)) {
+                //             await launch(googleMapsUrl);
+                //           } else {
+                //             print('Không thể mở Google Maps.');
+                //           }
+                //         } else {
+                //           print('Vị trí hiện tại không có sẵn.');
+                //         }
+                //       },
+                //       child: GoogleMap(
+                //         initialCameraPosition: CameraPosition(
+                //           target: _currentPosition,
+                //           zoom: 16,
+                //         ),
+                //         onMapCreated: (controller) {
+                //           _mapController = controller;
+                //           print('Google Map đã được tạo thành công');
+                //         },
+                //         myLocationEnabled: true,
+                //         markers: {
+                //           Marker(
+                //             markerId: MarkerId("current_location"),
+                //             position: _currentPosition,
+                //           ),
+                //         },
+                //       ),
+                //     ),
+                //   ),
+                // ),
               ],
             ),
           ),
         ),
       ),
-      bottomNavigationBar: HomeBottomBar(),
+      bottomNavigationBar: HomeBottomBar(currentIndex: 2),
     );
   }
 }
