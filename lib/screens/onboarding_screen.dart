@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:travelvn/screens/auth/sign_in.dart';
 import 'package:travelvn/screens/auth/sign_up.dart';
+import 'package:travelvn/screens/home.dart';
 import 'package:travelvn/themes/app_color.dart';
 // import 'package:travelvn/screens/detail.dart';
 // import 'package:travelvn/screens/details_Location.dart';
@@ -68,9 +69,14 @@ class _OnboardingView extends State<OnboardingView> {
 
                           Navigator.pushAndRemoveUntil(
                             context,
-                            MaterialPageRoute(builder: (_) => SignUp()),
+                            MaterialPageRoute(builder: (_) => HomePage()),
                             (route) => false,
                           );
+                          // Navigator.pushAndRemoveUntil(
+                          //   context,
+                          //   MaterialPageRoute(builder: (_) => SignUp()),
+                          //   (route) => false,
+                          // );
                         },
                         // Navigator.pushAndRemoveUntil(
                         //       context,

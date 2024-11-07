@@ -1,8 +1,14 @@
+// ignore_for_file: unused_field
+
 import 'package:flutter/material.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:travelvn/widgets/home_app_bar.dart';
 import 'package:travelvn/widgets/home_bottom_bar.dart';
 import 'package:travelvn/widgets/table_calendar.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -24,9 +30,13 @@ class _HomePageState extends State<HomePage> {
   final PageController _pageController = PageController();
   int _currentPage = 0; // index hiện tại
 
+  late GoogleMapController _mapController;
+  LatLng _currentPosition = LatLng(21.0285, 105.8542);
+
   @override
   void initState() {
     super.initState();
+    _getCurrentLocation();
     // thay đổi page
     _pageController.addListener(() {
       setState(() {
@@ -34,6 +44,28 @@ class _HomePageState extends State<HomePage> {
       });
     });
   }
+
+  
+  
+  Future<void> _getCurrentLocation() async {
+  var status = await Permission.location.status;
+  if (!status.isGranted) {
+    // Yêu cầu quyền truy cập vị trí
+    status = await Permission.location.request();
+    if (!status.isGranted) {
+      // Nếu người dùng từ chối, hiển thị thông báo lỗi hoặc xử lý logic tương ứng
+      print('User denied permissions to access the device\'s location.');
+      return;
+    }
+  }
+
+  // Nếu quyền đã được cấp, tiếp tục lấy vị trí
+  Position position = await Geolocator.getCurrentPosition(
+      desiredAccuracy: LocationAccuracy.high);
+  setState(() {
+    _currentPosition = LatLng(position.latitude, position.longitude);
+  });
+}
 
   @override
   void dispose() {
@@ -264,27 +296,80 @@ class _HomePageState extends State<HomePage> {
               ),
               SizedBox(height: 20),
               Row(
-                children: [
-                  Expanded(
-                    child: Container(
-                      padding: const EdgeInsets.only(left: 15.0),
-                      alignment: Alignment.topLeft,
-                      child: Text(
-                      "Bản đồ",
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
+                  children: [
+                    Expanded(
+                      child: Container(
+                        padding: const EdgeInsets.only(left: 15.0),
+                        alignment: Alignment.topLeft,
+                        child: Text(
+                          "Bản đồ",
+                          style: TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    )
+                  ],
+                ),
+                SizedBox(height: 20),
+                
+                // Google Map Widget
+                // Widget Google Map
+                Container(
+                  height: 200,
+                  margin: const EdgeInsets.symmetric(horizontal: 15),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(15),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black26,
+                        blurRadius: 4,
+                        offset: Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(15),
+                    child: GestureDetector(
+                      onTap: () async {
+                        // Đảm bảo vị trí hiện tại có sẵn
+                        if (_currentPosition.latitude != 0 && _currentPosition.longitude != 0) {
+                          String googleMapsUrl = "https://www.google.com/maps/search/?api=1&query=${_currentPosition.latitude},${_currentPosition.longitude}";
+                          if (await canLaunch(googleMapsUrl)) {
+                            await launch(googleMapsUrl);
+                          } else {
+                            print('Không thể mở Google Maps.');
+                          }
+                        } else {
+                          print('Vị trí hiện tại không có sẵn.');
+                        }
+                      },
+                      child: GoogleMap(
+                        initialCameraPosition: CameraPosition(
+                          target: _currentPosition,
+                          zoom: 16,
+                        ),
+                        onMapCreated: (controller) {
+                          _mapController = controller;
+                          print('Google Map đã được tạo thành công');
+                        },
+                        myLocationEnabled: true,
+                        markers: {
+                          Marker(
+                            markerId: MarkerId("current_location"),
+                            position: _currentPosition,
+                          ),
+                        },
                       ),
                     ),
-                    ),
-                  )
-                ],
-              ),
-            ],
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
-        ),
-        
       ),
       bottomNavigationBar: HomeBottomBar(),
     );
