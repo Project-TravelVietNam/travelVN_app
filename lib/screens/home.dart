@@ -1,7 +1,9 @@
 // ignore_for_file: unused_field
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:table_calendar/table_calendar.dart';
+import 'package:travelvn/screens/local.dart';
 import 'package:travelvn/widgets/home_app_bar.dart';
 import 'package:travelvn/widgets/home_app_top.dart';
 import 'package:travelvn/widgets/home_bottom_bar.dart';
@@ -19,6 +21,8 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  List<Map<String, dynamic>> locations = [];
+  List<Map<String, dynamic>> recommendedLocations = [];
   final List<String> category = [
     'Địa điểm nổi bật',
     'Di tích',
@@ -37,6 +41,7 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
+    fetchLocations();
     _getCurrentLocation();
     // thay đổi page
     _pageController.addListener(() {
@@ -44,8 +49,31 @@ class _HomePageState extends State<HomePage> {
         _currentPage = _pageController.page!.round(); // index hiện tại
       });
     });
+    fetchLocations();
   }
 
+  // Lấy dữ liệu từ Firestore và sử dụng học máy để đề xuất
+  Future<void> fetchLocations() async {
+    final snapshot = await FirebaseFirestore.instance.collection('local').get();
+
+    // Lấy tất cả địa điểm
+    setState(() {
+      locations = snapshot.docs.map((doc) => doc.data() as Map<String, dynamic>).toList();
+    });
+
+    // Áp dụng mô hình học máy (ví dụ: sắp xếp theo độ phổ biến)
+    _recommendLocations();
+  }
+
+  // Đề xuất địa điểm nổi bật dựa trên mức độ phổ biến (ví dụ: dựa vào 'popularity')
+  void _recommendLocations() {
+    // Giả sử 'popularity' là một giá trị số
+    recommendedLocations = List.from(locations)
+      ..sort((a, b) => (b['popularity'] ?? 0).compareTo(a['popularity'] ?? 0)); // Sắp xếp theo độ phổ biến
+
+    // Chỉ lấy 5 địa điểm đầu tiên để hiển thị
+    recommendedLocations = recommendedLocations.take(5).toList();
+  }
   
   
   Future<void> _getCurrentLocation() async {
@@ -77,77 +105,98 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      //appBar: HomeAppTop(),
       appBar: const PreferredSize(preferredSize: Size.fromHeight(90.0), child: HomeAppBar()),
       body: SafeArea(
         child: SingleChildScrollView(
           child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 10),
-          child: Column(
-            children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Container(
-                      padding: const EdgeInsets.only(left: 15.0),
-                      alignment: Alignment.topLeft,
-                      child: Text(
-                      "Địa điểm nổi bật",
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
+            padding: const EdgeInsets.symmetric(vertical: 10),
+            child: Column(
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Container(
+                        padding: const EdgeInsets.only(left: 15.0),
+                        alignment: Alignment.topLeft,
+                        child: Text(
+                          "Địa điểm nổi bật",
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                       ),
                     ),
+                    GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => LocalPage()), 
+                        );
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.only(right: 15.0),
+                        alignment: Alignment.topRight,
+                        child: Text(
+                          "Tất cả địa điểm",
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.blue, 
+                          ),
+                        ),
+                      ),
                     ),
-                  )
-                ],
-              ),
-              SizedBox(height: 20),
-              Row(
-                children: [
-                  Expanded(
-                    child: Container(
-                      height: 200,
-                      child: PageView.builder(
-                        controller: _pageController,
-                        itemCount: 6,
-                        itemBuilder: (BuildContext context, int index) {
-                          return InkWell(
-                            onTap: () {
-                              // thêm vô đây để chuyển trang đến các địa điểm
-                            },
-                            child: Container(
-                              width: 160,
-                              padding: EdgeInsets.all(20),
-                              margin: EdgeInsets.only(left: 15),
-                              decoration: BoxDecoration(
-                                color: Colors.black,
-                                borderRadius: BorderRadius.circular(15),
-                                image: DecorationImage(
-                                  image: AssetImage("assets/images/city${index + 1}.png"),
-                                  fit: BoxFit.cover,
-                                ),
-                              ),
-                              child: Column(
-                                children: [
-                                  Container(
-                                    alignment: Alignment.topRight,
-                                    child: Icon(
-                                      Icons.favorite_outline,
-                                      color: Colors.white,
-                                      size: 30,
-                                    ),
-                                  ),
-                                  Spacer(),
-                                  Container(
-                                    alignment: Alignment.bottomLeft,
-                                    child: Text(
-                                      "City Name", //nữa mấy cái dữ liệu để vô đây
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.w600,
+                  ],
+                ),
+                SizedBox(height: 20),
+                Row(                
+                  children: [
+                    Expanded(
+                      child: Container(
+                        height: 200,
+                        child: recommendedLocations.isEmpty
+                            ? Center(child: CircularProgressIndicator())
+                            : PageView.builder(
+                                controller: _pageController, // Cập nhật controller
+                                itemCount: recommendedLocations.length,
+                                itemBuilder: (BuildContext context, int index) {
+                                  final location = recommendedLocations[index];
+                                  return InkWell(
+                                    onTap: () {
+                                      // Thêm mã để chuyển trang hoặc làm gì đó khi click vào địa điểm
+                                    },
+                                    child: Container(
+                                      width: 160,
+                                      padding: EdgeInsets.all(20),
+                                      margin: EdgeInsets.only(left: 15),
+                                      decoration: BoxDecoration(
+                                        color: Colors.black,
+                                        borderRadius: BorderRadius.circular(15),
+                                        image: DecorationImage(
+                                          image: AssetImage("assets/images/city${index + 1}.png"),
+                                          fit: BoxFit.cover,
+                                        ),
                                       ),
+                                      child: Column(
+                                        children: [
+                                          Container(
+                                            alignment: Alignment.topRight,
+                                            child: Icon(
+                                              Icons.favorite_outline,
+                                              color: Colors.white,
+                                              size: 30,
+                                            ),
+                                          ),
+                                          Spacer(),
+                                          Container(
+                                            alignment: Alignment.bottomLeft,
+                                            child: Text(
+                                              location['local_name'] ?? 'Tên địa điểm',
+                                              style: TextStyle(
+                                                color: Colors.white,
+                                                fontSize: 18,
+                                                fontWeight: FontWeight.w600,
+                                              ),
                                     ),
                                   ),
                                 ],
@@ -164,13 +213,13 @@ class _HomePageState extends State<HomePage> {
               // Chấm chỉ số trang
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
-                children: List.generate(6, (index) {
+                children: List.generate(recommendedLocations.length, (index) {
                   return Container(
                     margin: const EdgeInsets.symmetric(horizontal: 5),
                     width: 12,
                     height: 12,
                     decoration: BoxDecoration(
-                      color: index == _currentPage ? Colors.blueAccent : Colors.grey, // Đổi màu dựa trên chỉ số
+                      color: index == _currentPage ? Colors.blueAccent : Colors.grey,
                       shape: BoxShape.circle,
                     ),
                   );
