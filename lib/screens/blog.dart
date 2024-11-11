@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:travelvn/screens/post_card.dart';
-import 'package:travelvn/widgets/home_app_top.dart';
+import 'package:travelvn/widgets/home_app_bar.dart';
 import 'package:travelvn/widgets/home_bottom_bar.dart';
 
 class BlogPage extends StatefulWidget {
@@ -14,13 +14,14 @@ class _BlogPageState extends State<BlogPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: HomeAppTop(),
+      appBar: const PreferredSize(
+        preferredSize: Size.fromHeight(90.0),
+        child: HomeAppBar(),
+      ),
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16.0), 
         child: ListView(
           children: [
-            const SizedBox(height: 10), 
-            SearchBar(),
             const SizedBox(height: 20), 
             PostCard(
               username: 'Thanh Vũ',

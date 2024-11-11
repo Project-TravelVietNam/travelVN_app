@@ -10,6 +10,11 @@ class LocalPage extends StatefulWidget {
 
 class _LocalPageState extends State<LocalPage> {
   List<Map<String, dynamic>> locations = [];
+  final List<String> category = [
+    'Lịch sử',
+    'Văn hóa',
+    'Ẩm thực',
+  ];
 
   @override
   void initState() {
@@ -18,7 +23,6 @@ class _LocalPageState extends State<LocalPage> {
   }
 
   Future<void> fetchLocations() async {
-    // Lấy dữ liệu từ collection 'local' trong Firestore
     final snapshot = await FirebaseFirestore.instance.collection('local').get();
     setState(() {
       locations = snapshot.docs.map((doc) => doc.data() as Map<String, dynamic>).toList();
@@ -41,79 +45,132 @@ class _LocalPageState extends State<LocalPage> {
         preferredSize: Size.fromHeight(90.0),
         child: HomeAppBar(),
       ),
-      body: locations.isEmpty
-          ? Center(child: CircularProgressIndicator())
-          : ListView.builder(
-              padding: EdgeInsets.all(16.0),
-              itemCount: locations.length,
-              itemBuilder: (context, index) {
-                final location = locations[index];
-                return GestureDetector(
-                  onTap: () => navigateToDetail(location),
-                  child: Container(
-                    margin: EdgeInsets.only(bottom: 16.0),
-                    padding: EdgeInsets.all(16.0),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16.0),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black26,
-                          blurRadius: 10.0,
-                          offset: Offset(0, 4),
+      body: Column(
+        children: [
+          SizedBox(height: 10), 
+          Text(
+            "Danh mục địa điểm",
+            style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            ),
+          ),
+          SizedBox(height: 10),
+          // Phần thêm danh mục bên dưới AppBar
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Padding(
+              padding: EdgeInsets.all(8),
+              child: Row(
+                children: [
+                  for (int i = 0; i < (category.length < 3 ? category.length : 3); i++)
+                    Container(
+                      margin: EdgeInsets.symmetric(horizontal: 10),
+                      child: ElevatedButton(
+                        onPressed: () {
+                          print("Button category ${i + 1} pressed");
+                        },
+                        style: ElevatedButton.styleFrom(
+                          padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                          backgroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          shadowColor: Colors.black26,
+                          elevation: 4,
                         ),
-                      ],
-                      border: Border.all(color: Colors.grey.shade200),
+                        child: Text(
+                          category[i],
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.black,
+                          ),
+                        ),
+                      ),
                     ),
-                    child: Row(
-                      children: [
-                        Container(
-                          padding: EdgeInsets.all(8.0),
+                ],
+              ),
+            ),
+          ),
+          SizedBox(height: 10), // Khoảng cách giữa danh mục và danh sách địa điểm
+          Expanded(
+            child: locations.isEmpty
+                ? Center(child: CircularProgressIndicator())
+                : ListView.builder(
+                    padding: EdgeInsets.all(16.0),
+                    itemCount: locations.length,
+                    itemBuilder: (context, index) {
+                      final location = locations[index];
+                      return GestureDetector(
+                        onTap: () => navigateToDetail(location),
+                        child: Container(
+                          margin: EdgeInsets.only(bottom: 16.0),
+                          padding: EdgeInsets.all(16.0),
                           decoration: BoxDecoration(
-                            color: Colors.blueAccent.withOpacity(0.1),
-                            shape: BoxShape.circle,
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(16.0),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black26,
+                                blurRadius: 10.0,
+                                offset: Offset(0, 4),
+                              ),
+                            ],
+                            border: Border.all(color: Colors.grey.shade200),
                           ),
-                          child: Icon(
-                            Icons.location_on,
-                            color: Colors.blueAccent,
-                            size: 30.0,
-                          ),
-                        ),
-                        SizedBox(width: 16.0),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                          child: Row(
                             children: [
-                              Text(
-                                location['local_name'] ?? 'Tên địa điểm',
-                                style: TextStyle(
-                                  fontSize: 20.0,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.black87,
+                              Container(
+                                padding: EdgeInsets.all(8.0),
+                                decoration: BoxDecoration(
+                                  color: Colors.blueAccent.withOpacity(0.1),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Icon(
+                                  Icons.location_on,
+                                  color: Colors.blueAccent,
+                                  size: 30.0,
                                 ),
                               ),
-                              SizedBox(height: 4.0),
-                              Text(
-                                'ID: ${location['local_id'] ?? 'N/A'}',
-                                style: TextStyle(
-                                  fontSize: 14.0,
-                                  color: Colors.grey.shade600,
+                              SizedBox(width: 16.0),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      location['local_name'] ?? 'Tên địa điểm',
+                                      style: TextStyle(
+                                        fontSize: 20.0,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.black87,
+                                      ),
+                                    ),
+                                    SizedBox(height: 4.0),
+                                    Text(
+                                      'ID: ${location['local_id'] ?? 'N/A'}',
+                                      style: TextStyle(
+                                        fontSize: 14.0,
+                                        color: Colors.grey.shade600,
+                                      ),
+                                    ),
+                                  ],
                                 ),
+                              ),
+                              Icon(
+                                Icons.arrow_forward_ios,
+                                color: Colors.grey.shade400,
+                                size: 18.0,
                               ),
                             ],
                           ),
                         ),
-                        Icon(
-                          Icons.arrow_forward_ios,
-                          color: Colors.grey.shade400,
-                          size: 18.0,
-                        ),
-                      ],
-                    ),
+                      );
+                    },
                   ),
-                );
-              },
-            ),
+          ),
+        ],
+      ),
       bottomNavigationBar: HomeBottomBar(currentIndex: 3),
     );
   }
@@ -126,47 +183,45 @@ class DetailPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-  return Scaffold(
-    appBar: AppBar(
-      title: RichText(
-        text: TextSpan(
+    return Scaffold(
+      appBar: AppBar(
+        title: RichText(
+          text: TextSpan(
+            children: [
+              TextSpan(
+                  text: "Travel",
+                  style: TextStyle(
+                      color: Colors.blue,
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold)),
+              TextSpan(
+                  text: "VietNam",
+                  style: TextStyle(
+                      color: Colors.red,
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold)),
+            ],
+          ),
+        ),
+      ),
+      body: Padding(
+        padding: EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            TextSpan(
-                text: "Travel",
-                style: TextStyle(
-                    color: Colors.blue,
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold)),
-            TextSpan(
-                text: "VietNam",
-                style: TextStyle(
-                    color: Colors.red,
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold)),
+            Text(
+              'ID: ${location['local_id'] ?? 'N/A'}',
+              style: TextStyle(fontSize: 16.0, color: Colors.grey.shade700),
+            ),
+            SizedBox(height: 8.0),
+            Text(
+              location['local_name'] ?? 'Tên địa điểm',
+              style: TextStyle(fontSize: 24.0, fontWeight: FontWeight.bold),
+            ),
           ],
         ),
       ),
-    ),
-    body: Padding(
-      padding: EdgeInsets.all(16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'ID: ${location['local_id'] ?? 'N/A'}',
-            style: TextStyle(fontSize: 16.0, color: Colors.grey.shade700),
-          ),
-          SizedBox(height: 8.0),
-          Text(
-            location['local_name'] ?? 'Tên địa điểm',
-            style: TextStyle(fontSize: 24.0, fontWeight: FontWeight.bold),
-          ),
-          // Add other details here if necessary
-        ],
-      ),
-    ),
-    bottomNavigationBar: HomeBottomBar(currentIndex: 3),
-  );
-}
-
+      bottomNavigationBar: HomeBottomBar(currentIndex: 3),
+    );
+  }
 }
