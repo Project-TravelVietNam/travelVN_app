@@ -7,14 +7,27 @@ class SearchPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          'Tìm kiếm',
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
+        title: RichText(
+          text: TextSpan(
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: Colors.blue,  
+            ),
+            children: [
+              TextSpan(
+                text: 'Travel',  
+              ),
+              TextSpan(
+                text: ' VietNam',  
+                style: TextStyle(
+                  color: Colors.red,  
+                ),
+              ),
+            ],
           ),
         ),
-        backgroundColor: Colors.blue,
+        backgroundColor: const Color.fromARGB(255, 255, 255, 255),
         actions: [
           IconButton(
             icon: Icon(Icons.close),
@@ -37,7 +50,7 @@ class SearchPage extends StatelessWidget {
                 suffixIcon: IconButton(
                   icon: Icon(Icons.mic, color: Colors.blue, size: 26),
                   onPressed: () {
-                    // Thêm chức năng tìm kiếm bằng giọng nói nếu cần
+                    // Thêm chức năng tìm kiếm bằng giọng nói
                   },
                 ),
                 filled: true,

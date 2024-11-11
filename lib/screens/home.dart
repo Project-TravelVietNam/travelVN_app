@@ -123,7 +123,7 @@ class _HomePageState extends State<HomePage> {
       body: SafeArea(
         child: SingleChildScrollView(
           child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 10),
+            padding: const EdgeInsets.all(10.0),
             child: Column(
               children: [
                 Row(
@@ -394,73 +394,82 @@ class _HomePageState extends State<HomePage> {
               ),
               SizedBox(height: 20),
               Row(
-                children: [
-                  Expanded(
-                    child: Container(
-                      padding: const EdgeInsets.only(left: 15.0),
-                      alignment: Alignment.topLeft,
-                      child: Text(
-                      "Lịch của tháng",
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
+              children: [
+                Icon(Icons.calendar_today, color: Colors.blue, size: 24), // Thêm icon lịch
+                SizedBox(width: 10), // Khoảng cách giữa icon và tiêu đề
+                Expanded(
+                  child: Text(
+                    "Lịch của tháng",
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black87,
                     ),
-                    ),
-                  )
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: 20),
+
+            // Khung ngoài cho lịch
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.white, // Màu nền trắng cho khung
+                borderRadius: BorderRadius.circular(20), // Bo góc mềm mại
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black12, // Đổ bóng nhẹ nhàng
+                    blurRadius: 8,
+                    offset: Offset(0, 4), // Đổ bóng ở phía dưới
+                  ),
                 ],
               ),
-              SizedBox(height: 20),
-
-              // hiển thị lịch thu nhỏ
-
-              // Khung ngoài cho lịch
-              Container(
-                decoration: BoxDecoration(
-                  color: const Color.fromARGB(255, 242, 247, 255), // Màu lam cho khung ngoài
-                  borderRadius: BorderRadius.circular(15), // Bo góc
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black26,
-                      blurRadius: 4,
-                      offset: Offset(0, 2), // Đổ bóng
+              padding: const EdgeInsets.all(12), // Khoảng cách bên trong khung
+              child: InkWell(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => CalendarPage(),
                     ),
-                  ],
-                ),
-                padding: const EdgeInsets.all(10), // Khoảng cách bên trong khung
-                child: InkWell(
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => CalendarPage(),
+                  );
+                },
+                child: SizedBox(
+                  height: 350, // Giới hạn chiều cao cho lịch
+                  width: double.infinity, // Chiều rộng tự động phù hợp với màn hình
+                  child: TableCalendar(
+                    focusedDay: DateTime.now(),
+                    firstDay: DateTime.utc(2020, 1, 1),
+                    lastDay: DateTime.utc(2030, 12, 31),
+                    calendarFormat: CalendarFormat.month,
+                    availableCalendarFormats: const {
+                      CalendarFormat.month: 'Month',
+                    },
+                    headerStyle: HeaderStyle(
+                      formatButtonVisible: false,
+                      titleTextStyle: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
                       ),
-                    );
-                  },
-                  child: SizedBox(
-                    height: 340, // Giới hạn chiều cao cho lịch
-                    width: 330, // Giới hạn chiều rộng cho lịch
-                    child: TableCalendar(
-                      focusedDay: DateTime.now(),
-                      firstDay: DateTime.utc(2020, 1, 1),
-                      lastDay: DateTime.utc(2030, 12, 31),
-                      calendarFormat: CalendarFormat.month,
-                      availableCalendarFormats: const {
-                        CalendarFormat.month: 'Month',
-                      },
-                      headerStyle: HeaderStyle(
-                        formatButtonVisible: false,
+                    ),
+                    calendarStyle: CalendarStyle(
+                      todayDecoration: BoxDecoration(
+                        color: Colors.blueAccent,
+                        shape: BoxShape.circle,
                       ),
-                      calendarStyle: CalendarStyle(
-                        todayDecoration: BoxDecoration(
-                          color: Colors.blueAccent,
-                          shape: BoxShape.circle,
-                        ),
+                      selectedDecoration: BoxDecoration(
+                        color: Colors.blue,
+                        shape: BoxShape.circle,
                       ),
+                      weekendTextStyle: TextStyle(
+                        color: Colors.red, // Màu đỏ cho các ngày cuối tuần
+                      ),
+                      todayTextStyle: TextStyle(color: Colors.white),
                     ),
                   ),
                 ),
               ),
+            ),
               SizedBox(height: 20),
               Row(
                   children: [
