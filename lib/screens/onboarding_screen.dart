@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:travelvn/screens/auth/sign_in.dart';
 import 'package:travelvn/screens/auth/sign_up.dart';
+import 'package:travelvn/screens/home.dart';
 import 'package:travelvn/themes/app_color.dart';
-
+// import 'package:travelvn/screens/detail.dart';
+// import 'package:travelvn/screens/details_Location.dart';
 class OnboardingView extends StatefulWidget {
   const OnboardingView({super.key});
 
@@ -64,12 +66,29 @@ class _OnboardingView extends State<OnboardingView> {
                     if (currentIndex < onboarding.length - 1)
                       GestureDetector(
                         onTap: () {
+
                           Navigator.pushAndRemoveUntil(
                             context,
-                            MaterialPageRoute(builder: (_) => SignUp()),
+                            MaterialPageRoute(builder: (_) => HomePage()),
                             (route) => false,
                           );
+                          // Navigator.pushAndRemoveUntil(
+                          //   context,
+                          //   MaterialPageRoute(builder: (_) => SignUp()),
+                          //   (route) => false,
+                          // );
                         },
+                        // Navigator.pushAndRemoveUntil(
+                        //       context,
+                        //       MaterialPageRoute(
+                        //         builder: (_) => const DetailsLocation(),
+                        //       ),
+                        //       (route) => false);               //Muốn chạy xem trang chi tiết thì mọi người mở cái này ra nha
+                          // Navigator.push(
+                          //   context,
+                          //   MaterialPageRoute(builder: (_) => HomePage()),
+                          // ); //nếu muốn chạy các trang khác thì có thể đóng trang home này nha
+                       
                         child: Container(
                           padding: EdgeInsets.symmetric(
                             horizontal: size.width * 0.04,
