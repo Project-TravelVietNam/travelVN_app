@@ -1,16 +1,18 @@
-// ignore_for_file: unused_field
+import 'dart:convert';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:travelvn/screens/blog.dart';
+import 'package:travelvn/screens/detail.dart';
 import 'package:travelvn/screens/local.dart';
 import 'package:travelvn/widgets/home_app_bar.dart';
 import 'package:travelvn/widgets/home_bottom_bar.dart';
 import 'package:travelvn/widgets/table_calendar.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-// import 'package:geolocator/geolocator.dart';
 import 'package:permission_handler/permission_handler.dart';
+
+import 'package:http/http.dart' as http;
 
 
 class HomePage extends StatefulWidget {
@@ -23,54 +25,55 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   List<Map<String, dynamic>> locations = [];
   List<Map<String, dynamic>> recommendedLocations = [];
-  final List<String> category = [
-    'Lịch sử',
-    'Văn hóa',
-    'Ẩm thực',
-    
-  ];
+  final List<String> category = ['Tất cả địa điểm','Lịch sử', 'Văn hóa Ẩm thực'];
 
   final PageController _pageController = PageController();
   int _currentPage = 0; // index hiện tại
-
-  GoogleMapController ? mapController;
-  final LatLng _center = const LatLng(21.0285, 105.8542);
-  
-  // late GoogleMapController _mapController;
-  // LatLng _currentPosition = LatLng(21.0285, 105.8542);
 
   @override
   void initState() {
     super.initState();
     fetchLocations();
-    _getCurrentLocation();
     // thay đổi page
     _pageController.addListener(() {
       setState(() {
         _currentPage = _pageController.page!.round(); // index hiện tại
       });
     });
-    fetchLocations();
+    //fetchLocations();
   }
 
-  // Lấy dữ liệu từ Firestore và sử dụng học máy để đề xuất
   Future<void> fetchLocations() async {
-    final snapshot = await FirebaseFirestore.instance.collection('local').get();
+    String url;
+    if (category == 'Lịch sử') {
+      url = 'http://localhost:8800/v1/history';
+    } else if (category == 'Văn hóa Ẩm thực') {
+      url = 'http://localhost:8800/v1/cultural';
+    } else {
+      url = 'http://192.168.0.149:8800/v1/local';  
+    }
 
-    // Lấy tất cả địa điểm
-    setState(() {
-      locations = snapshot.docs.map((doc) => doc.data() as Map<String, dynamic>).toList();
-    });
+    try {
+      final response = await http.get(Uri.parse(url));
 
-    // Áp dụng mô hình học máy (ví dụ: sắp xếp theo độ phổ biến)
-    _recommendLocations();
+      if (response.statusCode == 200) {
+        final List<dynamic> data = json.decode(response.body);
+        setState(() {
+          locations = data.map((item) => item as Map<String, dynamic>).toList();
+        });
+      } else {
+        throw Exception('Failed to load locations');
+      }
+    } catch (error) {
+      print('Error fetching locations: $error');
+    }
   }
 
   void navigateToDetail(Map<String, dynamic> location) {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => DetailPage(location: location),
+        builder: (context) => Detail(),
       ),
     );
   }
@@ -84,36 +87,11 @@ class _HomePageState extends State<HomePage> {
     // Chỉ lấy 5 địa điểm đầu tiên để hiển thị
     recommendedLocations = recommendedLocations.take(5).toList();
   }
-  
-  
-  Future<void> _getCurrentLocation() async {
-  var status = await Permission.location.status;
-  if (!status.isGranted) {
-    // Yêu cầu quyền truy cập vị trí
-    status = await Permission.location.request();
-    if (!status.isGranted) {
-      // Nếu người dùng từ chối, hiển thị thông báo lỗi hoặc xử lý logic tương ứng
-      print('User denied permissions to access the device\'s location.');
-      return;
-    }
-  }
-
-  // Nếu quyền đã được cấp, tiếp tục lấy vị trí
-  // Position position = await Geolocator.getCurrentPosition(
-  //     desiredAccuracy: LocationAccuracy.high);
-  // setState(() {
-  //   _currentPosition = LatLng(position.latitude, position.longitude);
-  // });
-}
 
   @override
   void dispose() {
     _pageController.dispose();
     super.dispose();
-  }
-  
-  void _onMapCreated(GoogleMapController controller) {
-    mapController = controller;
   }
 
   @override
@@ -164,7 +142,7 @@ class _HomePageState extends State<HomePage> {
                 ),
                 
                 SizedBox(height: 20),
-                Row(                
+                Row(
                   children: [
                     Expanded(
                       child: Container(
@@ -172,32 +150,49 @@ class _HomePageState extends State<HomePage> {
                         child: recommendedLocations.isEmpty
                             ? Center(child: CircularProgressIndicator())
                             : PageView.builder(
-                                controller: _pageController, // Cập nhật controller
+                                controller: _pageController,
                                 itemCount: recommendedLocations.length,
                                 itemBuilder: (BuildContext context, int index) {
                                   final location = recommendedLocations[index];
+
+                                  String imageId = location['imgLocal'] != null && location['imgLocal'] is List
+                                      ? location['imgLocal'][0]
+                                      : null;
+
+                                  String imageUrl = imageId != null
+                                      ? 'http://192.168.0.149:8800/v1/img/$imageId'
+                                      : 'https://example.com/default-image.png';
+
                                   return InkWell(
                                     onTap: () {
-                                      // Thêm mã để chuyển trang hoặc làm gì đó khi click vào địa điểm
+                                      // Navigate to detail page or perform an action
                                     },
                                     child: Container(
                                       width: 160,
-                                      padding: EdgeInsets.all(20),
+                                      padding: EdgeInsets.all(12),
                                       margin: EdgeInsets.only(left: 15),
                                       decoration: BoxDecoration(
-                                        color: Colors.black,
-                                        borderRadius: BorderRadius.circular(15),
+                                        color: Colors.black.withOpacity(0.7),
+                                        borderRadius: BorderRadius.circular(20),
                                         image: DecorationImage(
-                                          image: AssetImage("assets/images/city${index + 1}.png"),
+                                          image: NetworkImage(imageUrl),
                                           fit: BoxFit.cover,
                                         ),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: Colors.black.withOpacity(0.3),
+                                            spreadRadius: 2,
+                                            blurRadius: 6,
+                                            offset: Offset(0, 4),
+                                          ),
+                                        ],
                                       ),
                                       child: Column(
                                         children: [
                                           Container(
                                             alignment: Alignment.topRight,
                                             child: Icon(
-                                              Icons.favorite_outline,
+                                              Icons.favorite_border,
                                               color: Colors.white,
                                               size: 30,
                                             ),
@@ -205,25 +200,34 @@ class _HomePageState extends State<HomePage> {
                                           Spacer(),
                                           Container(
                                             alignment: Alignment.bottomLeft,
+                                            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                                             child: Text(
-                                              location['local_name'] ?? 'Tên địa điểm',
+                                              location['title'] ?? 'Tên địa điểm',
                                               style: TextStyle(
                                                 color: Colors.white,
                                                 fontSize: 18,
-                                                fontWeight: FontWeight.w600,
+                                                fontWeight: FontWeight.bold,
+                                                shadows: [
+                                                  Shadow(
+                                                    color: Colors.black.withOpacity(0.7),
+                                                    offset: Offset(2,2),
+                                                    blurRadius: 8,
+                                                  ),
+                                                ],
                                               ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
                                     ),
-                                  ),
-                                ],
+                                  );
+                                },
                               ),
                             ),
-                          );
-                        },
+                          ),
+                        ],
                       ),
-                    ),
-                  ),
-                ],
-              ),
+
               SizedBox(height: 20),
               // Chấm chỉ số trang
               Row(
@@ -287,54 +291,105 @@ class _HomePageState extends State<HomePage> {
                     ),
                   ),
                 ),
-                SizedBox(height: 20),
+                SizedBox(height: 10),
                 // Cuộn ngang các địa điểm gợi ý
                 SizedBox(
-                  height: 200, // Cài đặt chiều cao cho vùng cuộn
+                  height: 220, 
                   child: SingleChildScrollView(
                     scrollDirection: Axis.horizontal,
                     child: Padding(
-                      padding: EdgeInsets.all(8),
-                      child: Row(
+                      padding: EdgeInsets.symmetric(horizontal: 8), 
+                      child: Wrap( 
+                        spacing: 12, 
+                        runSpacing: 8, 
                         children: locations.map((location) {
+                          String imageId = location['imgLocal'] != null && location['imgLocal'] is List
+                              ? location['imgLocal'][0]  
+                              : null;
+
+                          String imageUrl = imageId != null
+                              ? 'http://192.168.0.149:8800/v1/img/$imageId'
+                              : 'https://example.com/default-image.png'; 
+
                           return GestureDetector(
-                            onTap: () => navigateToDetail(location),
+                            onTap: () => navigateToDetail(location), 
                             child: Container(
-                              margin: EdgeInsets.symmetric(horizontal: 10),
-                              padding: EdgeInsets.all(10),
+                              width: 170, 
+                              padding: EdgeInsets.all(12), 
                               decoration: BoxDecoration(
                                 color: Colors.white,
-                                borderRadius: BorderRadius.circular(10),
+                                borderRadius: BorderRadius.circular(20), 
                                 boxShadow: [
                                   BoxShadow(
-                                    color: Colors.black26,
-                                    blurRadius: 4,
+                                    color: Colors.black.withOpacity(0.1), 
+                                    blurRadius: 12, 
+                                    spreadRadius: 1, 
+                                    offset: Offset(0, 4), 
                                   ),
                                 ],
+                                gradient: LinearGradient( 
+                                  colors: [Colors.white, Colors.grey.shade100],
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                ),
                               ),
                               child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
+                                crossAxisAlignment: CrossAxisAlignment.center, 
+                                mainAxisAlignment: MainAxisAlignment.center, 
                                 children: [
-                                  Container(
-                                    height: 120,
-                                    width: 120,
-                                    decoration: BoxDecoration(
-                                      borderRadius: BorderRadius.circular(8),
-                                      image: DecorationImage(
-                                        image: NetworkImage(location['image_url'] ?? 'https://via.placeholder.com/120'),
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(12),
+                                    child: Container(
+                                      alignment: Alignment.center, 
+                                      height: 120,
+                                      width: 120, 
+                                      child: Image.network(
+                                        imageUrl,
                                         fit: BoxFit.cover,
+                                        loadingBuilder: (context, child, loadingProgress) {
+                                          if (loadingProgress == null) return child;
+                                          return Center(
+                                            child: CircularProgressIndicator(
+                                              value: loadingProgress.expectedTotalBytes != null
+                                                  ? loadingProgress.cumulativeBytesLoaded /
+                                                      (loadingProgress.expectedTotalBytes ?? 1)
+                                                  : null,
+                                            ),
+                                          );
+                                        },
+                                        errorBuilder: (context, error, stackTrace) {
+                                          return Container(
+                                            color: Colors.grey[200],
+                                            alignment: Alignment.center,
+                                            child: Icon(
+                                              Icons.broken_image,
+                                              color: Colors.grey,
+                                              size: 40.0,
+                                            ),
+                                          );
+                                        },
                                       ),
                                     ),
                                   ),
-                                  SizedBox(height: 8),
+                                  SizedBox(height: 3),
                                   Text(
-                                    location['local_name'] ?? 'Tên địa điểm',
+                                    location['title'] ?? 'Tên địa điểm',
                                     style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w600,
+                                      fontSize: 14, 
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.black87,
                                     ),
+                                    textAlign: TextAlign.center, 
                                   ),
-                                  
+                                  SizedBox(height: 4), 
+                                  if (location['region'] != null)
+                                    Text(
+                                      location['region']['name'] ?? 'Tên Tỉnh',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.grey.shade600,
+                                      ),
+                                    ),
                                 ],
                               ),
                             ),
@@ -489,69 +544,15 @@ class _HomePageState extends State<HomePage> {
                   ],
                 ),
                 SizedBox(height: 20),
-                
-                // Google Map Widget
-                // Widget Google Map
-                // Container(
-                //   height: 200,
-                //   margin: const EdgeInsets.symmetric(horizontal: 15),
-                //   decoration: BoxDecoration(
-                //     color: Colors.white,
-                //     borderRadius: BorderRadius.circular(15),
-                //     boxShadow: [
-                //       BoxShadow(
-                //         color: Colors.black26,
-                //         blurRadius: 4,
-                //         offset: Offset(0, 2),
-                //       ),
-                //     ],
-                //   ),
-                //   child: ClipRRect(
-                //     borderRadius: BorderRadius.circular(15),
-                //     child: GestureDetector(
-                //       onTap: () async {
-                //         // Đảm bảo vị trí hiện tại có sẵn
-                //         if (_currentPosition.latitude != 0 && _currentPosition.longitude != 0) {
-                //           String googleMapsUrl = "https://www.google.com/maps/search/?api=1&query=${_currentPosition.latitude},${_currentPosition.longitude}";
-                //           if (await canLaunch(googleMapsUrl)) {
-                //             await launch(googleMapsUrl);
-                //           } else {
-                //             print('Không thể mở Google Maps.');
-                //           }
-                //         } else {
-                //           print('Vị trí hiện tại không có sẵn.');
-                //         }
-                //       },
-                //       child: GoogleMap(
-                //         initialCameraPosition: CameraPosition(
-                //           target: _currentPosition,
-                //           zoom: 16,
-                //         ),
-                //         onMapCreated: (controller) {
-                //           _mapController = controller;
-                //           print('Google Map đã được tạo thành công');
-                //         },
-                //         myLocationEnabled: true,
-                //         markers: {
-                //           Marker(
-                //             markerId: MarkerId("current_location"),
-                //             position: _currentPosition,
-                //           ),
-                //         },
-                //       ),
-                //     ),
-                //   ),
-                // ),
-                SizedBox(height: 20),
                 Container(
                   height: 300,
-                  child: GoogleMap(
-                    onMapCreated: _onMapCreated,
-                    initialCameraPosition: CameraPosition(
-                      target: _center,
-                      zoom: 12.0,
-                    ),
-                  ),
+                  // child: GoogleMap(
+                  //   onMapCreated: _onMapCreated,
+                  //   initialCameraPosition: CameraPosition(
+                  //     target: _center,
+                  //     zoom: 12.0,
+                  //   ),
+                  // ),
                 ),
               ],
             ),
@@ -559,57 +560,6 @@ class _HomePageState extends State<HomePage> {
         ),
       ),
       bottomNavigationBar: HomeBottomBar(currentIndex: 2),
-    );
-  }
-}
-
-class DetailPage extends StatelessWidget {
-  final Map<String, dynamic> location;
-
-  DetailPage({required this.location});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: RichText(
-          text: TextSpan(
-            children: [
-              TextSpan(
-                  text: "Travel",
-                  style: TextStyle(
-                      color: Colors.blue,
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold)),
-              TextSpan(
-                  text: "VietNam",
-                  style: TextStyle(
-                      color: Colors.red,
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold)),
-            ],
-          ),
-        ),
-      ),
-      body: Padding(
-        padding: EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'ID: ${location['local_id'] ?? 'N/A'}',
-              style: TextStyle(fontSize: 16.0, color: Colors.grey.shade700),
-            ),
-            SizedBox(height: 8.0),
-            Text(
-              location['local_name'] ?? 'Tên địa điểm',
-              style: TextStyle(fontSize: 24.0, fontWeight: FontWeight.bold),
-            ),
-            // Thêm các chi tiết khác nếu cần
-          ],
-        ),
-      ),
-      bottomNavigationBar: HomeBottomBar(currentIndex: 3),
     );
   }
 }

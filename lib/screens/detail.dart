@@ -3,10 +3,6 @@ import 'package:travelvn/widgets/home_bottom_bar.dart';
 
 class Detail extends StatefulWidget {
   const Detail({super.key});
-  
-
-
-
   @override
   _DetailState createState() => _DetailState();
 }
@@ -17,20 +13,26 @@ class _DetailState extends State<Detail> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // appBar: AppBar(
-      //   backgroundColor: Colors.white,
-      //   elevation: 0,
-      //   leading: IconButton(
-      //     icon: Icon(Icons.arrow_back, color: Colors.black),
-      //     onPressed: () {},
-      //   ),
-      //   actions: [
-      //     IconButton(
-      //       icon: Icon(Icons.favorite_border, color: Colors.black),
-      //       onPressed: () {},
-      //     ),
-      //   ],
-      // ),
+      appBar: AppBar(
+        title: RichText(
+          text: TextSpan(
+            children: [
+              TextSpan(
+                  text: "Travel",
+                  style: TextStyle(
+                      color: Colors.blue,
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold)),
+              TextSpan(
+                  text: "VietNam",
+                  style: TextStyle(
+                      color: Colors.red,
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold)),
+            ],
+          ),
+        ),
+      ),
       body: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
