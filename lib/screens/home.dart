@@ -44,23 +44,16 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> fetchLocations() async {
-    String url;
-    if (category == 'Lịch sử') {
-      url = 'http://localhost:8800/v1/history';
-    } else if (category == 'Văn hóa Ẩm thực') {
-      url = 'http://localhost:8800/v1/cultural';
-    } else {
-      url = 'http://192.168.0.149:8800/v1/local';  
-    }
-
     try {
-      final response = await http.get(Uri.parse(url));
+      final response = await http.get(Uri.parse('http://192.168.0.149:8800/v1/local'));
 
       if (response.statusCode == 200) {
         final List<dynamic> data = json.decode(response.body);
         setState(() {
           locations = data.map((item) => item as Map<String, dynamic>).toList();
         });
+
+        _recommendLocations();
       } else {
         throw Exception('Failed to load locations');
       }
@@ -156,20 +149,20 @@ class _HomePageState extends State<HomePage> {
                                   final location = recommendedLocations[index];
 
                                   String imageId = location['imgLocal'] != null && location['imgLocal'] is List
-                                      ? location['imgLocal'][0]
-                                      : null;
+                                    ? location['imgLocal'][0]  
+                                    : null;
 
                                   String imageUrl = imageId != null
-                                      ? 'http://192.168.0.149:8800/v1/img/$imageId'
-                                      : 'https://example.com/default-image.png';
+                                    ? 'http://192.168.0.149:8800/v1/img/$imageId'
+                                    : 'https://example.com/default-image.png'; 
 
                                   return InkWell(
                                     onTap: () {
-                                      // Navigate to detail page or perform an action
+                                      
                                     },
                                     child: Container(
-                                      width: 160,
-                                      padding: EdgeInsets.all(12),
+                                      width: 150,
+                                      padding: EdgeInsets.all(20),
                                       margin: EdgeInsets.only(left: 15),
                                       decoration: BoxDecoration(
                                         color: Colors.black.withOpacity(0.7),
@@ -179,20 +172,20 @@ class _HomePageState extends State<HomePage> {
                                           fit: BoxFit.cover,
                                         ),
                                         boxShadow: [
-                                          BoxShadow(
-                                            color: Colors.black.withOpacity(0.3),
-                                            spreadRadius: 2,
-                                            blurRadius: 6,
-                                            offset: Offset(0, 4),
-                                          ),
-                                        ],
+                                        BoxShadow(
+                                          color: Colors.black.withOpacity(0.4),
+                                          spreadRadius: 2,
+                                          blurRadius: 8,
+                                          offset: Offset(0, 4),
+                                        ),
+                                      ],
                                       ),
                                       child: Column(
                                         children: [
                                           Container(
                                             alignment: Alignment.topRight,
                                             child: Icon(
-                                              Icons.favorite_border,
+                                              Icons.favorite_outline,
                                               color: Colors.white,
                                               size: 30,
                                             ),
@@ -210,7 +203,7 @@ class _HomePageState extends State<HomePage> {
                                                 shadows: [
                                                   Shadow(
                                                     color: Colors.black.withOpacity(0.7),
-                                                    offset: Offset(2,2),
+                                                    offset: Offset(2, 2),
                                                     blurRadius: 8,
                                                   ),
                                                 ],
@@ -223,10 +216,11 @@ class _HomePageState extends State<HomePage> {
                                   );
                                 },
                               ),
-                            ),
-                          ),
-                        ],
                       ),
+                    ),
+                  ],
+                ),
+
 
               SizedBox(height: 20),
               // Chấm chỉ số trang
@@ -265,8 +259,10 @@ class _HomePageState extends State<HomePage> {
                             margin: EdgeInsets.symmetric(horizontal: 10),
                             child: ElevatedButton(
                               onPressed: () {
-                                // Thêm hành động khi nhấn vào nút, ví dụ:
-                                print("Button category ${i + 1} pressed");
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(builder: (context) => LocalPage()), 
+                                  );
                               },
                               style: ElevatedButton.styleFrom(
                                 padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
