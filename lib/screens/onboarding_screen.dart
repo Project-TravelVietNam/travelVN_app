@@ -232,23 +232,6 @@ class _OnboardingView extends State<OnboardingView> {
                                     ),
                                   ),
                                 ],
-                                // child: Text.rich(
-                                //   TextSpan(
-                                //     children: [
-                                //       const TextSpan(
-                                //         text: "Bạn đã có tài khoản! ",
-                                //         style: TextStyle(fontSize: 16),
-                                //       ),
-                                //       TextSpan(
-                                //         text: "Đăng nhập",
-                                //         style: const TextStyle(
-                                //           color: Colors.blue,
-                                //           fontSize: 16,
-                                //         ),
-                                //       ),
-                                //     ],
-                                //   ),
-                                // ),
                               ),
                             ),
                           ],
