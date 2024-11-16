@@ -31,6 +31,7 @@ dependencies:
   permission_handler: ^11.3.1
   url_launcher: ^6.3.1
   shared_preferences: ^2.3.3
+  photo_view: ^0.15.0
 
   flutter_svg: ^2.0.10+1
 
@@ -59,7 +60,7 @@ flutter:
   assets:
     - assets/fonts/
     - assets/images/
-    - assets/vectors/
+    # - assets/vectors/
 
   fonts:
     - family: Misans

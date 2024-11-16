@@ -1,9 +1,11 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:travelvn/screens/detail.dart';
+import 'package:travelvn/screens/detailCulural.dart';
+import 'package:travelvn/screens/detailHistory.dart';
 import 'package:travelvn/widgets/home_app_bar.dart';
 import 'package:travelvn/widgets/home_bottom_bar.dart';
+import 'detail.dart';
 
 class LocalPage extends StatefulWidget {
   @override
@@ -45,15 +47,6 @@ class _LocalPageState extends State<LocalPage> {
     }
   }
 
-  void navigateToDetail(Map<String, dynamic> location, BuildContext context) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => Detail(),
-      ),
-    );
-  }
-
   @override
   void initState() {
     super.initState();
@@ -90,7 +83,7 @@ class _LocalPageState extends State<LocalPage> {
           Padding(
             padding: EdgeInsets.symmetric(horizontal: 16.0),
             child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal, // Thiết lập để cuộn ngang
+              scrollDirection: Axis.horizontal,
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.start,
                 children: category.map((cat) => Container(
@@ -122,8 +115,7 @@ class _LocalPageState extends State<LocalPage> {
                   ),
                 )).toList(),
               ),
-            )
-
+            ),
           ),
           SizedBox(height: 15),
           Expanded(
@@ -153,7 +145,34 @@ class _LocalPageState extends State<LocalPage> {
                       }
 
                       return GestureDetector(
-                        onTap: () => navigateToDetail(location, context),
+                        onTap: () {
+                          if (selectedCategory == 'Lịch sử') {
+                            // Điều hướng đến DetailHistory khi nhấn vào mục Lịch sử
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => DetailHistory(location: location),
+                              ),
+                            );
+                          } else if (selectedCategory == 'Văn Hóa Ẩm Thực') {
+                            // Điều hướng đến DetailCulural khi nhấn vào mục Văn Hóa Ẩm Thực
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => DetailCulural(location: location),
+                              ),
+                            );
+                          } else {
+                            // Điều hướng đến Detail khi không phải là Lịch sử hay Văn Hóa Ẩm Thực
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => Detail(location: location),
+                              ),
+                            );
+                          }
+                        },
+
                         child: Card(
                           elevation: 4.0,
                           shape: RoundedRectangleBorder(

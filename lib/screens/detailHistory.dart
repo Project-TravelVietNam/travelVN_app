@@ -3,21 +3,21 @@ import 'package:travelvn/widgets/home_bottom_bar.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:travelvn/widgets/table_calendar.dart';
 
-class Detail extends StatefulWidget {
+class DetailHistory extends StatefulWidget {
   final Map<String, dynamic> location;
 
-  const Detail({super.key, required this.location});
+  const DetailHistory({super.key, required this.location});
 
   @override
-  _DetailState createState() => _DetailState();
+  _DetailHistoryState createState() => _DetailHistoryState();
 }
 
-class _DetailState extends State<Detail> {
+class _DetailHistoryState extends State<DetailHistory> {
   bool isExpanded = false;
 
   @override
   Widget build(BuildContext context) {
-    var localData = widget.location;
+    var localHistory = widget.location;
 
     return Scaffold(
       appBar: AppBar(
@@ -57,8 +57,8 @@ class _DetailState extends State<Detail> {
                           // Ảnh hiển thị toàn màn hình
                           PhotoView(
                             imageProvider: NetworkImage(
-                              localData['imgLocal'] != null && localData['imgLocal'].isNotEmpty
-                                  ? 'http://192.168.0.149:8800/v1/img/${localData['imgLocal'][0]}'
+                              localHistory['imgHistory'] != null && localHistory['imgHistory'].isNotEmpty
+                                  ? 'http://192.168.0.149:8800/v1/img/${localHistory['imgHistory'][0]}'
                                   : 'https://via.placeholder.com/600',
                             ),
                           ),
@@ -86,8 +86,8 @@ class _DetailState extends State<Detail> {
                         bottomLeft: Radius.circular(30),
                         bottomRight: Radius.circular(30)),
                     child: Image.network(
-                      localData['imgLocal'] != null && localData['imgLocal'].isNotEmpty
-                          ? 'http://192.168.0.149:8800/v1/img/${localData['imgLocal'][0]}'
+                      localHistory['imgHistory'] != null && localHistory['imgHistory'].isNotEmpty
+                          ? 'http://192.168.0.149:8800/v1/img/${localHistory['imgHistory'][0]}'
                           : 'https://via.placeholder.com/600',
                       fit: BoxFit.cover,
                       width: double.infinity,
@@ -110,7 +110,7 @@ class _DetailState extends State<Detail> {
                     left: 20,
                     right: 20, 
                     child: Text(
-                      localData['title'] ?? 'Chưa có tiêu đề',
+                      localHistory['title'] ?? 'Chưa có tiêu đề',
                       style: TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
@@ -163,7 +163,7 @@ class _DetailState extends State<Detail> {
                   SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      localData['region']?['name'] ?? 'Chưa có khu vực',
+                      localHistory['region']?['name'] ?? 'Chưa có khu vực',
                       style: TextStyle(fontSize: 16, color: Colors.black54),
                     ),
                   ),
@@ -183,13 +183,13 @@ class _DetailState extends State<Detail> {
                   AnimatedCrossFade(
                     duration: Duration(milliseconds: 300),
                     firstChild: Text(
-                      localData['content'] ?? 'Chưa có mô tả',
+                      localHistory['content'] ?? 'Chưa có mô tả',
                       maxLines: 3,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(fontSize: 14, color: Colors.black87),
                     ),
                     secondChild: Text(
-                      localData['content'] ?? 'Chưa có mô tả',
+                      localHistory['content'] ?? 'Chưa có mô tả',
                       style: TextStyle(fontSize: 14, color: Colors.black87),
                     ),
                     crossFadeState:
@@ -227,7 +227,7 @@ class _DetailState extends State<Detail> {
                       SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          localData['address'] ?? 'Chưa có địa chỉ',
+                          localHistory['address'] ?? 'Chưa có địa chỉ',
                           style: TextStyle(fontSize: 14, color: Colors.black87),
                         ),
                       ),

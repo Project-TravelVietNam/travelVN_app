@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
+// import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:travelvn/screens/blog.dart';
@@ -9,8 +9,8 @@ import 'package:travelvn/screens/local.dart';
 import 'package:travelvn/widgets/home_app_bar.dart';
 import 'package:travelvn/widgets/home_bottom_bar.dart';
 import 'package:travelvn/widgets/table_calendar.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:permission_handler/permission_handler.dart';
+// import 'package:google_maps_flutter/google_maps_flutter.dart';
+// import 'package:permission_handler/permission_handler.dart';
 
 import 'package:http/http.dart' as http;
 
@@ -62,14 +62,7 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  void navigateToDetail(Map<String, dynamic> location) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => Detail(),
-      ),
-    );
-  }
+  
 
   // Đề xuất địa điểm nổi bật dựa trên mức độ phổ biến (ví dụ: dựa vào 'popularity')
   void _recommendLocations() {
@@ -158,7 +151,13 @@ class _HomePageState extends State<HomePage> {
 
                                   return InkWell(
                                     onTap: () {
-                                      
+                                      // Navigate to Detail screen with the location data
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) => Detail(location: location),
+                                        ),
+                                      );
                                     },
                                     child: Container(
                                       width: 150,
@@ -308,7 +307,16 @@ class _HomePageState extends State<HomePage> {
                               : 'https://example.com/default-image.png'; 
 
                           return GestureDetector(
-                            onTap: () => navigateToDetail(location), 
+                            // onTap: () => navigateToDetail(location), 
+                            onTap: () {
+                          // Navigate to Detail screen with the location data
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => Detail(location: location),
+                            ),
+                          );
+                        },
                             child: Container(
                               width: 170, 
                               padding: EdgeInsets.all(12), 

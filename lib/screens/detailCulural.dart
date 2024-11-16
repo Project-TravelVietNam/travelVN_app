@@ -3,16 +3,16 @@ import 'package:travelvn/widgets/home_bottom_bar.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:travelvn/widgets/table_calendar.dart';
 
-class Detail extends StatefulWidget {
+class DetailCulural extends StatefulWidget {
   final Map<String, dynamic> location;
 
-  const Detail({super.key, required this.location});
+  const DetailCulural({super.key, required this.location});
 
   @override
-  _DetailState createState() => _DetailState();
+  _DetailCuluralState createState() => _DetailCuluralState();
 }
 
-class _DetailState extends State<Detail> {
+class _DetailCuluralState extends State<DetailCulural> {
   bool isExpanded = false;
 
   @override
@@ -57,10 +57,11 @@ class _DetailState extends State<Detail> {
                           // Ảnh hiển thị toàn màn hình
                           PhotoView(
                             imageProvider: NetworkImage(
-                              localData['imgLocal'] != null && localData['imgLocal'].isNotEmpty
-                                  ? 'http://192.168.0.149:8800/v1/img/${localData['imgLocal'][0]}'
-                                  : 'https://via.placeholder.com/600',
-                            ),
+                          localData['imgculural'] != null && localData['imgculural'].isNotEmpty
+                              ? 'http://192.168.0.149:8800/v1/img/${localData['imgculural'][0]}'
+                              : 'https://via.placeholder.com/600',
+                        ),
+
                           ),
                           // Nút X để đóng ảnh
                           Positioned(
@@ -86,8 +87,8 @@ class _DetailState extends State<Detail> {
                         bottomLeft: Radius.circular(30),
                         bottomRight: Radius.circular(30)),
                     child: Image.network(
-                      localData['imgLocal'] != null && localData['imgLocal'].isNotEmpty
-                          ? 'http://192.168.0.149:8800/v1/img/${localData['imgLocal'][0]}'
+                      localData['imgculural'] != null && localData['imgculural'].isNotEmpty
+                          ? 'http://192.168.0.149:8800/v1/img/${localData['imgculural'][0]}'
                           : 'https://via.placeholder.com/600',
                       fit: BoxFit.cover,
                       width: double.infinity,
