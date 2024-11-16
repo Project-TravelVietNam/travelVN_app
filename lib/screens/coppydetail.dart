@@ -1,346 +1,249 @@
-
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:table_calendar/table_calendar.dart';
+import 'package:travelvn/screens/blog.dart';
+import 'package:travelvn/screens/detail.dart';
+import 'package:travelvn/screens/local.dart';
+import 'package:travelvn/widgets/home_app_bar.dart';
 import 'package:travelvn/widgets/home_bottom_bar.dart';
+import 'package:travelvn/widgets/table_calendar.dart';
+import 'package:http/http.dart' as http;
 
-class Detail extends StatefulWidget {
-  const Detail({super.key});
+
+class HomePage extends StatefulWidget {
+  const HomePage({super.key});
+
   @override
-  _DetailState createState() => _DetailState();
+  _HomePageState createState() => _HomePageState();
 }
 
-class _DetailState extends State<Detail> {
-  bool isExpanded = false; // Biến để lưu trạng thái xem thêm
+class _HomePageState extends State<HomePage> {
+  List<Map<String, dynamic>> locations = [];
+  List<Map<String, dynamic>> recommendedLocations = [];
+
+  final PageController _pageController = PageController();
+  int _currentPage = 0; // index hiện tại
+
+  @override
+  void initState() {
+    super.initState();
+    fetchLocations();
+    // thay đổi page
+    _pageController.addListener(() {
+      setState(() {
+        _currentPage = _pageController.page!.round(); // index hiện tại
+      });
+    });
+    //fetchLocations();
+  }
+
+  Future<void> fetchLocations() async {
+    try {
+      final response = await http.get(Uri.parse('http://192.168.0.149:8800/v1/local'));
+
+      if (response.statusCode == 200) {
+        final List<dynamic> data = json.decode(response.body);
+        setState(() {
+          locations = data.map((item) => item as Map<String, dynamic>).toList();
+        });
+
+        _recommendLocations();
+      } else {
+        throw Exception('Failed to load locations');
+      }
+    } catch (error) {
+      print('Error fetching locations: $error');
+    }
+  }
+  // Đề xuất địa điểm nổi bật dựa trên mức độ phổ biến (ví dụ: dựa vào 'popularity')
+  void _recommendLocations() {
+    // Giả sử 'popularity' là một giá trị số
+    recommendedLocations = List.from(locations)
+      ..sort((a, b) => (b['popularity'] ?? 0).compareTo(a['popularity'] ?? 0)); // Sắp xếp theo độ phổ biến
+
+    // Chỉ lấy 5 địa điểm đầu tiên để hiển thị
+    recommendedLocations = recommendedLocations.take(5).toList();
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: RichText(
-          text: TextSpan(
-            children: [
-              TextSpan(
-                  text: "Travel",
-                  style: TextStyle(
-                      color: Colors.blue,
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold)),
-              TextSpan(
-                  text: "VietNam",
-                  style: TextStyle(
-                      color: Colors.red,
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold)),
-            ],
-          ),
-        ),
-      ),
-      body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Stack(
-              children: [
-                Image.asset(
-                  'assets/images/anhdau1.png',
-                  fit: BoxFit.cover,
-                  width: double.infinity,
-                  height: 200,
-                ),
-                Positioned(
-                  top: 8,
-                  right: 8,
-                  child: GestureDetector(
-                    onTap: () {
-                      print('Đã nhấn yêu thích');
-                    },
-                    child: Icon(
-                      Icons.favorite_border,
-                      color: const Color.fromARGB(255, 252, 252, 252),
-                      size: 32,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Text(
-                'Huyện Cù Lao Dung',
-                style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: Row(
-                children: [
-                  Icon(Icons.location_on, color: Colors.blue),
-                  SizedBox(width: 8),
-                  Text(
-                    'Sóc Trăng',
-                    style: TextStyle(fontSize: 16, color: Colors.black54),
-                  ),
-                ],
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'GIỚI THIỆU CHI TIẾT',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
-                  SizedBox(height: 5),
-                  Text(
-                    'Địa điểm',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
-                  SizedBox(height: 8),
-                  Text(
-                    'Huyện Cù Lao Dung nằm ở phía đông tỉnh Sóc Trăng, nằm giữa tỉnh Sóc Trăng và tỉnh Trà Vinh, nhưng thực sự huyện là bao gồm 3 hòn cù lao nhỏ góp lại. Đây là một địa điểm đẹp và có nhiều cảnh quan thiên nhiên.',
-                    style: TextStyle(fontSize: 14, color: Colors.black87),
-                  ),
-                  if (isExpanded) ...[
-                    SizedBox(height: 8),
-                    Text(
-                      'Lịch sử',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                    ),
-                    SizedBox(height: 8),
-                    Text(
-                      'Trước năm 2002, huyện Cù Lao Dung thuộc huyện Long Phú, tỉnh Sóc Trăng. Ngày 11 tháng 1 năm 2002, Chính phủ ban hành Nghị định thành lập huyện Cù Lao Dung...',
-                      style: TextStyle(fontSize: 14, color: Colors.black87),
-                    ),
-                    SizedBox(height: 8),
-                    Text(
-                      'Văn Hóa ẩm thực',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                    ),
-                    SizedBox(height: 8),
-                    Text(
-                      'Huyện Cù Lao Dung có nền văn hóa ẩm thực phong phú với nhiều món ăn đặc trưng của vùng đồng bằng sông Cửu Long.',
-                      style: TextStyle(fontSize: 14, color: Colors.black87),
-                    ),
-                    SizedBox(height: 8),
-                    Text(
-                      'Địa điểm nổi bật',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                    ),
-                    SizedBox(height: 8),
-                    SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: Row(
-                        children: [
-                          buildImageTile('assets/images/anh1.png', 'Đền thờ Bác Hồ'),
-                          SizedBox(width: 8),
-                          buildImageTile('assets/images/anh2.png', 'Cầu Mỹ Thuận'),
-                          SizedBox(width: 8),
-                          buildImageTile('assets/images/anh3.png', 'Chợ nổi Cái Răng'),
-                        ],
-                      ),
-                    ),
-                  ],
-                  TextButton(
-                    onPressed: () {
-                      setState(() {
-                        isExpanded = !isExpanded;
-                      });
-                    },
-                    child: Text(isExpanded ? 'Thu gọn' : '...Xem thêm'),
-                  ),
-                ],
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '4,7',
-                    style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
-                  ),
-                  SizedBox(width: 8),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: List.generate(5, (index) {
-                          return Icon(Icons.star, color: Colors.blue);
-                        }),
-                      ),
-                      SizedBox(height: 4),
-                      Text('Đánh giá nhận xét'),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-              child: Column(
-                children: [
-                  buildRatingRow(5, 0.85),
-                  buildRatingRow(4, 0.10),
-                  buildRatingRow(3, 0.05),
-                  buildRatingRow(2, 0.0),
-                  buildRatingRow(1, 0.0),
-                ],
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  Image.asset('assets/images/anh1.png', width: 80, height: 80, fit: BoxFit.cover),
-                  Image.asset('assets/images/anh2.png', width: 80, height: 80, fit: BoxFit.cover),
-                  Image.asset('assets/images/anh3.png', width: 80, height: 80, fit: BoxFit.cover),
-                ],
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Text(
-                'Nhận xét (33)',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              ),
-            ),
-            buildCommentSection('Khoai Lang Thang', '3 giờ 15 phút trước', 'assets/images/user1.png', 4, 'Ở đây có rất nhiều địa điểm để khám phá du lịch.'),
-            buildCommentSection('Kang Ho', '4 ngày trước', 'assets/images/user2.png', 5, 'I was very happy to be exposed to the culture here.'),
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Container(
-                height: 200,
-                decoration: BoxDecoration(
-                  image: DecorationImage(
-                    image: AssetImage('assets/images/bando.png'),
-                    fit: BoxFit.cover,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-      // bottomNavigationBar: BottomNavigationBar(
-      //   type: BottomNavigationBarType.fixed,
-      //   items: [
-      //     BottomNavigationBarItem(
-      //       icon: Icon(Icons.home),
-      //       label: 'Home',
-      //     ),
-      //     BottomNavigationBarItem(
-      //       icon: Icon(Icons.article),
-      //       label: 'Blogs',
-      //     ),
-      //     BottomNavigationBarItem(
-      //       icon: Icon(Icons.favorite_border),
-      //       label: 'Like',
-      //     ),
-      //     BottomNavigationBarItem(
-      //       icon: Icon(Icons.person),
-      //       label: 'Profile',
-      //     ),
-      //   ],
-      // ),
-        floatingActionButton: FloatingActionButton.extended(
-    onPressed: () {},
-    label: Text('Thêm kế hoạch'),
-    icon: Icon(Icons.add),
-  ),
-  bottomNavigationBar: HomeBottomBar(currentIndex: 3), // Sử dụng HomeBottomBar ở đây
-)
-    ;
-  }
-
-  Widget buildRatingRow(int starCount, double progress) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2.0),
-      child: Row(
-        children: [
-          Text('$starCount'),
-          SizedBox(width: 8),
-          Expanded(
-            child: LinearProgressIndicator(
-              value: progress,
-              backgroundColor: Colors.grey[300],
-              color: Colors.blue,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget buildCommentSection(String name, String time, String avatarPath, int rating, String comment) {
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          ClipOval(
-            child: Image.asset(
-              avatarPath,
-              width: 40,
-              height: 40,
-              fit: BoxFit.cover,
-            ),
-          ),
-          SizedBox(width: 8),
-          Expanded(
+      appBar: const PreferredSize(preferredSize: Size.fromHeight(90.0), child: HomeAppBar()),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(10.0),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
                   children: [
-                    Text(
-                      name,
-                      style: TextStyle(fontWeight: FontWeight.bold),
+                    Expanded(
+                      child: Container(
+                        padding: const EdgeInsets.only(left: 15.0),
+                        alignment: Alignment.topLeft,
+                        child: Text(
+                          "Địa điểm nổi bật",
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
                     ),
-                    SizedBox(width: 8),
-                    Text(
-                      time,
-                      style: TextStyle(color: Colors.black54),
+                    GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => LocalPage()), 
+                        );
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.only(right: 15.0),
+                        alignment: Alignment.topRight,
+                        child: Text(
+                          "Tất cả địa điểm",
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.blue, 
+                          ),
+                        ),
+                      ),
                     ),
                   ],
                 ),
-                SizedBox(height: 4),
+                
+                SizedBox(height: 20),
                 Row(
-                  children: List.generate(rating, (index) {
-                    return Icon(Icons.star, color: Colors.blue);
-                  })..addAll(List.generate(5 - rating, (index) {
-                    return Icon(Icons.star_border, color: Colors.blue);
-                  })),
+                  children: [
+                    Expanded(
+                      child: Container(
+                        height: 200,
+                        child: recommendedLocations.isEmpty
+                            ? Center(child: CircularProgressIndicator())
+                            : PageView.builder(
+                                controller: _pageController,
+                                itemCount: recommendedLocations.length,
+                                itemBuilder: (BuildContext context, int index) {
+                                  final location = recommendedLocations[index];
+
+                                  String imageId = location['imgLocal'] != null && location['imgLocal'] is List
+                                    ? location['imgLocal'][0]  
+                                    : null;
+
+                                  String imageUrl = imageId != null
+                                    ? 'http://192.168.0.149:8800/v1/img/$imageId'
+                                    : 'https://example.com/default-image.png'; 
+
+                                  return InkWell(
+                                    onTap: () {
+                                      // Navigate to Detail screen with the location data
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) => Detail(location: location),
+                                        ),
+                                      );
+                                    },
+                                    child: Container(
+                                      width: 150,
+                                      padding: EdgeInsets.all(20),
+                                      margin: EdgeInsets.only(left: 15),
+                                      decoration: BoxDecoration(
+                                        color: Colors.black.withOpacity(0.7),
+                                        borderRadius: BorderRadius.circular(20),
+                                        image: DecorationImage(
+                                          image: NetworkImage(imageUrl),
+                                          fit: BoxFit.cover,
+                                        ),
+                                        boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.black.withOpacity(0.4),
+                                          spreadRadius: 2,
+                                          blurRadius: 8,
+                                          offset: Offset(0, 4),
+                                        ),
+                                      ],
+                                      ),
+                                      child: Column(
+                                        children: [
+                                          Container(
+                                            alignment: Alignment.topRight,
+                                            child: Icon(
+                                              Icons.favorite_outline,
+                                              color: Colors.white,
+                                              size: 30,
+                                            ),
+                                          ),
+                                          Spacer(),
+                                          Container(
+                                            alignment: Alignment.bottomLeft,
+                                            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                            child: Text(
+                                              location['title'] ?? 'Tên địa điểm',
+                                              style: TextStyle(
+                                                color: Colors.white,
+                                                fontSize: 18,
+                                                fontWeight: FontWeight.bold,
+                                                shadows: [
+                                                  Shadow(
+                                                    color: Colors.black.withOpacity(0.7),
+                                                    offset: Offset(2, 2),
+                                                    blurRadius: 8,
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+                      ),
+                    ),
+                  ],
                 ),
-                SizedBox(height: 4),
-                Text(comment),
+
+
+              SizedBox(height: 20),
+              // Chấm chỉ số trang
+              Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: List.generate(recommendedLocations.length, (index) {
+                    return Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 5),
+                      width: 12,
+                      height: 12,
+                      decoration: BoxDecoration(
+                        color: index == _currentPage ? Colors.blueAccent : Colors.grey,
+                        shape: BoxShape.circle,
+                      ),
+                    );
+                  }),
+                ),
+                // Dòng các danh mục
+                SizedBox(height: 20),
+                Text(
+                  "63 Tỉnh Thành Viêt Nam",
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                
               ],
             ),
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget buildImageTile(String imagePath, String title) {
-    return Column(
-      children: [
-        ClipRRect(
-          borderRadius: BorderRadius.circular(8.0),
-          child: Image.asset(
-            imagePath,
-            width: 100,
-            height: 100,
-            fit: BoxFit.cover,
-          ),
         ),
-        SizedBox(height: 4),
-        Text(title, style: TextStyle(fontSize: 12)),
-      ],
-      
+      ),
+      bottomNavigationBar: HomeBottomBar(currentIndex: 2),
     );
-    
   }
 }

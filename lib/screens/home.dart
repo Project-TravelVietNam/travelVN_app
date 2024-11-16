@@ -1,16 +1,14 @@
 import 'dart:convert';
-
-// import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:travelvn/screens/blog.dart';
 import 'package:travelvn/screens/detail.dart';
 import 'package:travelvn/screens/local.dart';
+import 'package:travelvn/themes/63VN.dart';
+import 'package:travelvn/widgets/63S.dart';
 import 'package:travelvn/widgets/home_app_bar.dart';
 import 'package:travelvn/widgets/home_bottom_bar.dart';
 import 'package:travelvn/widgets/table_calendar.dart';
-// import 'package:google_maps_flutter/google_maps_flutter.dart';
-// import 'package:permission_handler/permission_handler.dart';
 
 import 'package:http/http.dart' as http;
 
@@ -240,169 +238,258 @@ class _HomePageState extends State<HomePage> {
                 // Dòng các danh mục
                 SizedBox(height: 20),
                 Text(
-                  "Danh mục địa điểm",
+                  "63 Tỉnh Thành",
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
                 SizedBox(height: 10),
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Padding(
-                    padding: EdgeInsets.all(8),
-                    child: Row(
-                      children: [
-                        for (int i = 0; i < (category.length < 3 ? category.length : 3); i++)
-                          Container(
-                            margin: EdgeInsets.symmetric(horizontal: 10),
-                            child: ElevatedButton(
-                              onPressed: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(builder: (context) => LocalPage()), 
-                                  );
-                              },
-                              style: ElevatedButton.styleFrom(
-                                padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                                backgroundColor: Colors.white, // Màu nền cho nút
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                shadowColor: Colors.black26,
-                                elevation: 4,
-                              ),
-                              child: Text(
-                                category[i],
-                                style: TextStyle(
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w500,
-                                  color: Colors.black, // Màu chữ
-                                ),
-                              ),
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-                ),
-                SizedBox(height: 10),
-                // Cuộn ngang các địa điểm gợi ý
-                SizedBox(
-                  height: 220, 
-                  child: SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 8), 
-                      child: Wrap( 
-                        spacing: 12, 
-                        runSpacing: 8, 
-                        children: locations.map((location) {
-                          String imageId = location['imgLocal'] != null && location['imgLocal'] is List
-                              ? location['imgLocal'][0]  
-                              : null;
-
-                          String imageUrl = imageId != null
-                              ? 'http://192.168.0.149:8800/v1/img/$imageId'
-                              : 'https://example.com/default-image.png'; 
-
-                          return GestureDetector(
-                            // onTap: () => navigateToDetail(location), 
-                            onTap: () {
-                          // Navigate to Detail screen with the location data
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => Detail(location: location),
-                            ),
-                          );
-                        },
-                            child: Container(
-                              width: 170, 
-                              padding: EdgeInsets.all(12), 
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(20), 
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.1), 
-                                    blurRadius: 12, 
-                                    spreadRadius: 1, 
-                                    offset: Offset(0, 4), 
-                                  ),
-                                ],
-                                gradient: LinearGradient( 
-                                  colors: [Colors.white, Colors.grey.shade100],
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                ),
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.center, 
-                                mainAxisAlignment: MainAxisAlignment.center, 
-                                children: [
-                                  ClipRRect(
-                                    borderRadius: BorderRadius.circular(12),
-                                    child: Container(
-                                      alignment: Alignment.center, 
-                                      height: 120,
-                                      width: 120, 
-                                      child: Image.network(
-                                        imageUrl,
-                                        fit: BoxFit.cover,
-                                        loadingBuilder: (context, child, loadingProgress) {
-                                          if (loadingProgress == null) return child;
-                                          return Center(
-                                            child: CircularProgressIndicator(
-                                              value: loadingProgress.expectedTotalBytes != null
-                                                  ? loadingProgress.cumulativeBytesLoaded /
-                                                      (loadingProgress.expectedTotalBytes ?? 1)
-                                                  : null,
-                                            ),
-                                          );
-                                        },
-                                        errorBuilder: (context, error, stackTrace) {
-                                          return Container(
-                                            color: Colors.grey[200],
-                                            alignment: Alignment.center,
-                                            child: Icon(
-                                              Icons.broken_image,
-                                              color: Colors.grey,
-                                              size: 40.0,
-                                            ),
-                                          );
-                                        },
-                                      ),
-                                    ),
-                                  ),
-                                  SizedBox(height: 3),
-                                  Text(
-                                    location['title'] ?? 'Tên địa điểm',
-                                    style: TextStyle(
-                                      fontSize: 14, 
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.black87,
-                                    ),
-                                    textAlign: TextAlign.center, 
-                                  ),
-                                  SizedBox(height: 4), 
-                                  if (location['region'] != null)
-                                    Text(
-                                      location['region']['name'] ?? 'Tên Tỉnh',
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        color: Colors.grey.shade600,
-                                      ),
-                                    ),
-                                ],
-                              ),
-                            ),
-                          );
-                        }).toList(),
+                GestureDetector(
+                  onTap: () {
+                    // Navigate to the S63 screen
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => Local63Page()), // Navigate to the S63 page
+                    );
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 10.0),
+                    child: Text(
+                      "Xem tất cả các tỉnh thành",
+                      style: TextStyle(
+                        color: Colors.blue, // Link color
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                   ),
                 ),
+                SizedBox(height: 20),
+                Container(
+                  height: 160,
+                  child: ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: locationData.length > 63 ? 63 : locationData.length, // Hiển thị tối đa 63 tỉnh thành
+                    itemBuilder: (context, index) {
+                      final location = locationData[index];
+                      return Card(
+                        elevation: 6,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        clipBehavior: Clip.antiAlias,
+                        child: Column(
+                          children: [
+                            ClipRRect(
+                              borderRadius: BorderRadius.only(
+                                topLeft: Radius.circular(16),
+                                topRight: Radius.circular(16),
+                              ),
+                              child: Image.asset(
+                                location.img, 
+                                width: 120,
+                                height: 80,
+                                fit: BoxFit.cover,
+                              ),
+                            ),
+                            SizedBox(height: 3),
+                            Text(
+                              location.title, 
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black87,
+                              ),
+                            ),
+                            // Thêm nút khám phá vào mỗi tỉnh thành
+                            ElevatedButton(
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => LocalPage(), // Giả sử có trang DetailPage
+                                  ),
+                                );
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.blue, // Màu nền của nút
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                padding: EdgeInsets.symmetric(horizontal: 6, vertical: 3), // Thêm padding để giảm kích thước nút
+                                minimumSize: Size(40, 15), // Giới hạn kích thước tối thiểu của nút (width, height)
+                              ),
+                              child: Text(
+                                "Khám phá",
+                                style: TextStyle(color: Colors.white, fontSize: 12,),
+                                
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                ),
+
+                SizedBox(height: 20),
+                // SingleChildScrollView(
+                //   scrollDirection: Axis.horizontal,
+                //   child: Padding(
+                //     padding: EdgeInsets.all(8),
+                //     child: Row(
+                //       children: [
+                //         for (int i = 0; i < (category.length < 3 ? category.length : 3); i++)
+                //           Container(
+                //             margin: EdgeInsets.symmetric(horizontal: 10),
+                //             child: ElevatedButton(
+                //               onPressed: () {
+                //                   Navigator.push(
+                //                     context,
+                //                     MaterialPageRoute(builder: (context) => LocalPage()), 
+                //                   );
+                //               },
+                //               style: ElevatedButton.styleFrom(
+                //                 padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                //                 backgroundColor: Colors.white, // Màu nền cho nút
+                //                 shape: RoundedRectangleBorder(
+                //                   borderRadius: BorderRadius.circular(10),
+                //                 ),
+                //                 shadowColor: Colors.black26,
+                //                 elevation: 4,
+                //               ),
+                //               child: Text(
+                //                 category[i],
+                //                 style: TextStyle(
+                //                   fontSize: 15,
+                //                   fontWeight: FontWeight.w500,
+                //                   color: Colors.black, // Màu chữ
+                //                 ),
+                //               ),
+                //             ),
+                //           ),
+                //       ],
+                //     ),
+                //   ),
+                // ),
+                // SizedBox(height: 10),
+                // // Cuộn ngang các địa điểm gợi ý
+                // SizedBox(
+                //   height: 220, 
+                //   child: SingleChildScrollView(
+                //     scrollDirection: Axis.horizontal,
+                //     child: Padding(
+                //       padding: EdgeInsets.symmetric(horizontal: 8), 
+                //       child: Wrap( 
+                //         spacing: 12, 
+                //         runSpacing: 8, 
+                //         children: locations.map((location) {
+                //           String imageId = location['imgLocal'] != null && location['imgLocal'] is List
+                //               ? location['imgLocal'][0]  
+                //               : null;
+
+                //           String imageUrl = imageId != null
+                //               ? 'http://192.168.0.149:8800/v1/img/$imageId'
+                //               : 'https://example.com/default-image.png'; 
+
+                //           return GestureDetector(
+                //             // onTap: () => navigateToDetail(location), 
+                //             onTap: () {
+                //           // Navigate to Detail screen with the location data
+                //           Navigator.push(
+                //             context,
+                //             MaterialPageRoute(
+                //               builder: (context) => Detail(location: location),
+                //             ),
+                //           );
+                //         },
+                //             child: Container(
+                //               width: 170, 
+                //               padding: EdgeInsets.all(12), 
+                //               decoration: BoxDecoration(
+                //                 color: Colors.white,
+                //                 borderRadius: BorderRadius.circular(20), 
+                //                 boxShadow: [
+                //                   BoxShadow(
+                //                     color: Colors.black.withOpacity(0.1), 
+                //                     blurRadius: 12, 
+                //                     spreadRadius: 1, 
+                //                     offset: Offset(0, 4), 
+                //                   ),
+                //                 ],
+                //                 gradient: LinearGradient( 
+                //                   colors: [Colors.white, Colors.grey.shade100],
+                //                   begin: Alignment.topLeft,
+                //                   end: Alignment.bottomRight,
+                //                 ),
+                //               ),
+                //               child: Column(
+                //                 crossAxisAlignment: CrossAxisAlignment.center, 
+                //                 mainAxisAlignment: MainAxisAlignment.center, 
+                //                 children: [
+                //                   ClipRRect(
+                //                     borderRadius: BorderRadius.circular(12),
+                //                     child: Container(
+                //                       alignment: Alignment.center, 
+                //                       height: 120,
+                //                       width: 120, 
+                //                       child: Image.network(
+                //                         imageUrl,
+                //                         fit: BoxFit.cover,
+                //                         loadingBuilder: (context, child, loadingProgress) {
+                //                           if (loadingProgress == null) return child;
+                //                           return Center(
+                //                             child: CircularProgressIndicator(
+                //                               value: loadingProgress.expectedTotalBytes != null
+                //                                   ? loadingProgress.cumulativeBytesLoaded /
+                //                                       (loadingProgress.expectedTotalBytes ?? 1)
+                //                                   : null,
+                //                             ),
+                //                           );
+                //                         },
+                //                         errorBuilder: (context, error, stackTrace) {
+                //                           return Container(
+                //                             color: Colors.grey[200],
+                //                             alignment: Alignment.center,
+                //                             child: Icon(
+                //                               Icons.broken_image,
+                //                               color: Colors.grey,
+                //                               size: 40.0,
+                //                             ),
+                //                           );
+                //                         },
+                //                       ),
+                //                     ),
+                //                   ),
+                //                   SizedBox(height: 3),
+                //                   Text(
+                //                     location['title'] ?? 'Tên địa điểm',
+                //                     style: TextStyle(
+                //                       fontSize: 14, 
+                //                       fontWeight: FontWeight.bold,
+                //                       color: Colors.black87,
+                //                     ),
+                //                     textAlign: TextAlign.center, 
+                //                   ),
+                //                   SizedBox(height: 4), 
+                //                   if (location['region'] != null)
+                //                     Text(
+                //                       location['region']['name'] ?? 'Tên Tỉnh',
+                //                       style: TextStyle(
+                //                         fontSize: 12,
+                //                         color: Colors.grey.shade600,
+                //                       ),
+                //                     ),
+                //                 ],
+                //               ),
+                //             ),
+                //           );
+                //         }).toList(),
+                //       ),
+                //     ),
+                //   ),
+                // ),
               SizedBox(height: 20),
               Row(
                 children: [
