@@ -163,13 +163,17 @@ class _DetailState extends State<Detail> {
                   SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      localData['region']?['name'] ?? 'Chưa có khu vực',
+                      // Kiểm tra nếu localData['region'] là null hoặc không hợp lệ
+                      localData['region'] != null && localData['region'] is Map
+                          ? localData['region']['name'] ?? 'Chưa có khu vực'
+                          : 'Chưa có khu vực',
                       style: TextStyle(fontSize: 16, color: Colors.black54),
                     ),
                   ),
                 ],
               ),
             ),
+
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20.0),
               child: Column(

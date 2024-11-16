@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'package:travelvn/screens/search.dart';
+
+import 'package:travelvn/screens/detail.dart';
 
 class SearchPage extends StatefulWidget {
   const SearchPage({super.key});
@@ -131,12 +132,21 @@ class _SearchPageState extends State<SearchPage> {
                                 borderRadius: BorderRadius.circular(10), // Giảm kích thước bo góc
                               ),
                               elevation: 4, // Giảm độ dày của bóng
-                              child: InkWell(
+                              child: GestureDetector(
                                 onTap: () {
                                   Navigator.push(
                                     context,
                                     MaterialPageRoute(
-                                      builder: (context) => Search(item: item), // Đảm bảo tên lớp đúng
+                                      builder: (context) => Detail(
+                                        location: {
+                                          'imgLocal': item['imgLocal'],
+                                          'title': item['title'],
+                                          'region': item['region'],
+                                          'content': item['content'],
+                                          'address': item['address'],
+                                        }
+
+                                      ),
                                     ),
                                   );
                                 },
