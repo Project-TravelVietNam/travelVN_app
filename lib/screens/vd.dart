@@ -1,26 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:travelvn/widgets/home_bottom_bar.dart';
-import 'package:photo_view/photo_view.dart';
-import 'package:travelvn/widgets/table_calendar.dart';
 
-class Detail extends StatefulWidget {
-  final Map<String, dynamic> location;
-
-  const Detail({super.key, required this.location});
+class ProfilePage extends StatefulWidget {
+  const ProfilePage({super.key});
 
   @override
-  _DetailState createState() => _DetailState();
+  _ProfilePageState createState() => _ProfilePageState();
 }
 
-class _DetailState extends State<Detail> {
-  bool isExpanded = false;
+class _ProfilePageState extends State<ProfilePage> {
+  int selectedTabIndex = 0; // 0: Dòng thời gian, 1: Giới thiệu, 2: Album, 3: Đang theo dõi, 4: Viết bài
 
   @override
   Widget build(BuildContext context) {
-    var localData = widget.location;
-
     return Scaffold(
       appBar: AppBar(
+        automaticallyImplyLeading: false,
+        backgroundColor: Colors.white,
+        elevation: 0,
         title: RichText(
           text: TextSpan(
             children: [
@@ -39,441 +36,327 @@ class _DetailState extends State<Detail> {
             ],
           ),
         ),
-      ),
-      body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            GestureDetector(
-              onTap: () {
-                // Hiển thị ảnh chi tiết khi nhấn
-                showDialog(
-                  context: context,
-                  builder: (BuildContext context) {
-                    return Dialog(
-                      backgroundColor: Colors.transparent, // Cho nền trong suốt
-                      child: Stack(
-                        children: [
-                          // Ảnh hiển thị toàn màn hình
-                          PhotoView(
-                            imageProvider: NetworkImage(
-                              localData['imgLocal'] != null && localData['imgLocal'].isNotEmpty
-                                  ? 'http://192.168.0.149:8800/v1/img/${localData['imgLocal'][0]}'
-                                  : 'https://via.placeholder.com/600',
-                            ),
-                          ),
-                          // Nút X để đóng ảnh
-                          Positioned(
-                            top: 20,
-                            left: 20,
-                            child: IconButton(
-                              icon: Icon(Icons.close, color: Colors.white, size: 30),
-                              onPressed: () {
-                                Navigator.of(context).pop(); // Đóng Dialog
-                              },
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
-                );
-              },
-              child: Stack(
-                children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.only(
-                        bottomLeft: Radius.circular(30),
-                        bottomRight: Radius.circular(30)),
-                    child: Image.network(
-                      localData['imgLocal'] != null && localData['imgLocal'].isNotEmpty
-                          ? 'http://192.168.0.149:8800/v1/img/${localData['imgLocal'][0]}'
-                          : 'https://via.placeholder.com/600',
-                      fit: BoxFit.cover,
-                      width: double.infinity,
-                      height: 300,
-                    ),
-                  ),
-                  Positioned.fill(
-                    child: Container(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [Colors.black.withOpacity(0.5), Colors.transparent],
-                          begin: Alignment.bottomCenter,
-                          end: Alignment.topCenter,
-                        ),
-                      ),
-                    ),
-                  ),
-                  Positioned(
-                    bottom: 20,
-                    left: 20,
-                    right: 20, 
-                    child: Text(
-                      localData['title'] ?? 'Chưa có tiêu đề',
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                        height: 1.3, 
-                        shadows: [
-                          Shadow(blurRadius: 10, color: Colors.black, offset: Offset(0, 2)),
-                        ],
-                      ),
-                      maxLines: 2, 
-                      overflow: TextOverflow.ellipsis, 
-                    ),
-                  ),
-                  Positioned(
-                    top: 40,
-                    right: 20,
-                    child: GestureDetector(
-                      onTap: () {
-                        print('Đã nhấn yêu thích');
-                      },
-                      child: Container(
-                        padding: EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.2),
-                              blurRadius: 10,
-                              offset: Offset(0, 5),
-                            ),
-                          ],
-                        ),
-                        child: Icon(
-                          Icons.favorite_border,
-                          color: Colors.red,
-                          size: 32,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16.0),
-              child: Row(
-                children: [
-                  Icon(Icons.location_on, color: Colors.blue, size: 20),
-                  SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      localData['region']?['name'] ?? 'Chưa có khu vực',
-                      style: TextStyle(fontSize: 16, color: Colors.black54),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Giới thiệu chi tiết',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                  SizedBox(height: 10),
-                  AnimatedCrossFade(
-                    duration: Duration(milliseconds: 300),
-                    firstChild: Text(
-                      localData['content'] ?? 'Chưa có mô tả',
-                      maxLines: 3,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(fontSize: 14, color: Colors.black87),
-                    ),
-                    secondChild: Text(
-                      localData['content'] ?? 'Chưa có mô tả',
-                      style: TextStyle(fontSize: 14, color: Colors.black87),
-                    ),
-                    crossFadeState:
-                        isExpanded ? CrossFadeState.showSecond : CrossFadeState.showFirst,
-                  ),
-                  TextButton(
-                    onPressed: () {
-                      setState(() {
-                        isExpanded = !isExpanded;
-                      });
-                    },
-                    child: Row(
+        actions: [
+          IconButton(
+            icon: Icon(Icons.more_vert, color: Colors.black),
+            onPressed: () {
+              showModalBottomSheet(
+                context: context,
+                builder: (BuildContext context) {
+                  return Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
                       mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(isExpanded ? 'Thu gọn' : 'Xem thêm',
-                            style: TextStyle(color: Colors.blue)),
-                        Icon(
-                          isExpanded
-                              ? Icons.keyboard_arrow_up
-                              : Icons.keyboard_arrow_down,
-                          color: Colors.blue,
+                        Text(
+                          "Chỉnh sửa",
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        SizedBox(height: 10),
+                        ListTile(
+                          leading: Icon(Icons.settings, color: Colors.black),
+                          title: Text('Chỉnh sửa Trang cá nhân'),
+                          onTap: () {
+                            Navigator.pop(context); // Đóng BottomSheet
+                          },
+                        ),
+                        ListTile(
+                          leading: Icon(Icons.edit_calendar, color: Colors.black),
+                          title: Text('Lập kế hoạch'),
+                          onTap: () {
+                            Navigator.pop(context); // Đóng BottomSheet
+                          },
                         ),
                       ],
                     ),
-                  ),
-                  SizedBox(height: 20),
-                  Text(
-                    'Địa chỉ:',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
-                  SizedBox(height: 5),
-                  Row(
-                    children: [
-                      Icon(Icons.map, color: Colors.red, size: 18),
-                      SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          localData['address'] ?? 'Chưa có địa chỉ',
-                          style: TextStyle(fontSize: 14, color: Colors.black87),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            SizedBox(height: 30),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '4,7',
-                    style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
-                  ),
-                  SizedBox(width: 8),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: List.generate(5, (index) {
-                          return Icon(Icons.star, color: Colors.blue);
-                        }),
-                      ),
-                      SizedBox(height: 4),
-                      Text('Đánh giá nhận xét'),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-              child: Column(
-                children: [
-                  buildRatingRow(5, 0.85),
-                  buildRatingRow(4, 0.10),
-                  buildRatingRow(3, 0.05),
-                  buildRatingRow(2, 0.0),
-                  buildRatingRow(1, 0.0),
-                ],
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  Image.asset('assets/images/anh1.png', width: 80, height: 80, fit: BoxFit.cover),
-                  Image.asset('assets/images/anh2.png', width: 80, height: 80, fit: BoxFit.cover),
-                  Image.asset('assets/images/anh3.png', width: 80, height: 80, fit: BoxFit.cover),
-                ],
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Text(
-                'Nhận xét (33)',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              ),
-            ),
-            buildCommentSection('Khoai Lang Thang', '3 giờ 15 phút trước', 'assets/images/user1.png', 4, 'Ở đây có rất nhiều địa điểm để khám phá du lịch.'),
-            buildCommentSection('Kang Ho', '4 ngày trước', 'assets/images/user2.png', 5, 'I was very happy to be exposed to the culture here.'),
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Container(
-                height: 200,
-                decoration: BoxDecoration(
-                  image: DecorationImage(
-                    image: AssetImage('assets/images/bando.png'),
-                    fit: BoxFit.cover,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => CalendarPage()), // Điều hướng đến trang table_calendar.dart
-          );
-        },
-        label: Text('Thêm kế hoạch'),
-        icon: Icon(Icons.add),
-        backgroundColor: const Color.fromARGB(255, 171, 201, 226), // Đặt màu xanh cho nút
-      ),
-      bottomNavigationBar: HomeBottomBar(currentIndex: 3),
-    );
-  }
-  
-  Widget buildRatingRow(int starCount, double progress) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2.0),
-      child: Row(
-        children: [
-          Text('$starCount'),
-          SizedBox(width: 8),
-          Expanded(
-            child: LinearProgressIndicator(
-              value: progress,
-              backgroundColor: Colors.grey[300],
-              color: Colors.blue,
-            ),
+                  );
+                },
+              );
+            },
           ),
         ],
       ),
-    );
-  }
-
-  Widget buildCommentSection(String name, String time, String avatarPath, int rating, String comment) {
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          ClipOval(
-            child: Image.asset(
-              avatarPath,
-              width: 40,
-              height: 40,
-              fit: BoxFit.cover,
-            ),
-          ),
-          SizedBox(width: 8),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
+      body: SafeArea(
+        child: SingleChildScrollView(
+          child: Column(
+            children: [
+              // Profile Info
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
                   children: [
-                    Text(
-                      name,
-                      style: TextStyle(fontWeight: FontWeight.bold),
+                    Row(
+                      children: [
+                        Text(
+                          'Nguyễn Văn A', // Tên người dùng
+                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                          textAlign: TextAlign.center,
+                        ),
+                        
+                      ],
+      
                     ),
-                    SizedBox(width: 8),
-                    Text(
-                      time,
-                      style: TextStyle(color: Colors.black54),
+                    SizedBox(width: 16,),
+                    // Profile Image and Stats Row
+                    Row(
+                      children: [
+                        CircleAvatar(
+                          radius: 40,
+                          backgroundColor: Colors.blue,
+                        ),
+                        SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            children: [
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                children: [
+                                  Expanded(child: buildStatColumn('34', 'Điểm đến')),
+                                  Expanded(child: buildStatColumn('140', 'Người theo dõi')),
+                                  Expanded(child: buildStatColumn('456', 'Đang theo dõi')),
+                                ],
+                              ),
+                              SizedBox(height: 16),
+                              Text(
+                                'Blogger',
+                                style: TextStyle(fontSize: 16),
+                              ),
+                              Text(
+                                'Yêu du lịch, tích trải nghiệm',
+                                style: TextStyle(fontSize: 12, color: Colors.black54),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 20),
+
+                    // Tabs
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: TextButton(
+                            onPressed: () {
+                              setState(() {
+                                selectedTabIndex = 0; // Dòng thời gian
+                              });
+                            },
+                            child: Text('Dòng thời gian'),
+                          ),
+                        ),
+                        Expanded(
+                          child: TextButton(
+                            onPressed: () {
+                              setState(() {
+                                selectedTabIndex = 1; // Giới thiệu
+                              });
+                            },
+                            child: Text('Giới thiệu'),
+                          ),
+                        ),
+                        Expanded(
+                          child: TextButton(
+                            onPressed: () {
+                              setState(() {
+                                selectedTabIndex = 2; // Album
+                              });
+                            },
+                            child: Text('Album'),
+                          ),
+                        ),
+                        Expanded(
+                          child: TextButton(
+                            onPressed: () {
+                              setState(() {
+                                selectedTabIndex = 3; // Đang theo dõi
+                              });
+                            },
+                            child: Text('Đang theo dõi'),
+                          ),
+                        ),
+                        Expanded(
+                          child: TextButton(
+                            onPressed: () {
+                              setState(() {
+                                selectedTabIndex = 4; // Viết bài
+                              });
+                            },
+                            child: Text('Viết bài'),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
-                SizedBox(height: 4),
-                Row(
-                  children: List.generate(rating, (index) {
-                    return Icon(Icons.star, color: Colors.blue);
-                  })..addAll(List.generate(5 - rating, (index) {
-                    return Icon(Icons.star_border, color: Colors.blue);
-                  })),
+              ),
+
+              // Nội dung hiển thị dựa vào selectedTabIndex
+              if (selectedTabIndex == 0)
+                Container(
+                  height: 300,
+                  color: Colors.grey[200],
+                  child: Center(child: Text('Dòng thời gian')),
+                )
+              else if (selectedTabIndex == 1)
+                Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'THÔNG TIN CÁ NHÂN',
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      ),
+                      SizedBox(height: 20),
+                      buildPersonalInfoRow('Họ và tên', 'NNTN'),
+                      buildPersonalInfoRow('Email', 'nntn@gmail.com'),
+                      buildPersonalInfoRow('Số điện thoại', '0123456'),
+                      buildPersonalInfoRow('Ngày sinh', '15-01-2004'),
+                      buildPersonalInfoRow('Giới tính', 'Nữ'),
+                    ],
+                  ),
+                )
+              else if (selectedTabIndex == 2)
+                Container(
+                  height: 300,
+                  color: Colors.grey[200],
+                  child: Center(child: Text('Album')),
+                )
+              else if (selectedTabIndex == 3)
+                Container(
+                  height: 300,
+                  color: Colors.grey[200],
+                  child: Center(child: Text('Đang theo dõi')),
+                )
+              else if (selectedTabIndex == 4)
+                Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Viết bài',
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      ),
+                      SizedBox(height: 20),
+                      TextField(
+                        decoration: InputDecoration(
+                          labelText: 'Tên bài viết',
+                          border: OutlineInputBorder(),
+                        ),
+                      ),
+                      SizedBox(height: 10),
+                      TextField(
+                        decoration: InputDecoration(
+                          labelText: 'Ghi chú',
+                          border: OutlineInputBorder(),
+                          hintText: 'Bạn cần note gì ?',
+                        ),
+                      ),
+                      SizedBox(height: 10),
+                      TextField(
+                        maxLines: 5,
+                        decoration: InputDecoration(
+                          labelText: 'Nội dung',
+                          border: OutlineInputBorder(),
+                        ),
+                      ),
+                      SizedBox(height: 10),
+                      Text('Chủ đề *', style: TextStyle(color: Colors.red)),
+                      Wrap(
+                        spacing: 8,
+                        children: [
+                          Chip(label: Text('#Miền Nam')),
+                          Chip(label: Text('#Du lịch')),
+                        ],
+                      ),
+                      SizedBox(height: 20),
+                      Text(
+                        'Upload Images',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      Container(
+                        padding: EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.grey),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Column(
+                          children: [
+                            Icon(Icons.cloud_upload, size: 50, color: Colors.grey),
+                            Text(
+                              'Upload a file or drag and drop\nPNG, JPG, GIF up to 10MB',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(color: Colors.grey),
+                            ),
+                          ],
+                        ),
+                      ),
+                      SizedBox(height: 20),
+                      ElevatedButton(
+                        onPressed: () {
+                          // Save button action
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.blue,
+                          minimumSize: Size(double.infinity, 50),
+                        ),
+                        child: Text('Save'),
+                      ),
+                    ],
+                  ),
                 ),
-                SizedBox(height: 4),
-                Text(comment),
-              ],
-            ),
+            ],
           ),
+        ),
+      ),
+      bottomNavigationBar: HomeBottomBar(currentIndex: 4),
+    );
+  }
+
+  // Helper function to build statistic column
+  Column buildStatColumn(String number, String label) {
+    return Column(
+      children: [
+        Text(
+          number,
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        ),
+        Text(
+          label,
+          style: TextStyle(fontSize: 12, color: Colors.black54),
+        ),
+      ],
+    );
+  }
+
+  // Helper function to build personal info row
+  Widget buildPersonalInfoRow(String title, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            title,
+            style: TextStyle(color: Colors.black54),
+          ),
+          Text(value),
         ],
       ),
     );
   }
-
-  Widget buildImageTile(String imagePath, String title) {
-    return Column(
-      children: [
-        ClipRRect(
-          borderRadius: BorderRadius.circular(8.0),
-          child: Image.asset(
-            imagePath,
-            width: 100,
-            height: 100,
-            fit: BoxFit.cover,
-          ),
-        ),
-        SizedBox(height: 4),
-        Text(title, style: TextStyle(fontSize: 12)),
-      ],
-      
-    );
-    
-  }
 }
-// List<Location> locationData = [
-//     Location(img: 'assets/images/63S/angiang.png', title: "An Giang"),
-//     Location(img: 'assets/images/63S/bacgiang.png', title: "Bắc Giang"),
-//     Location(img: 'assets/images/63S/backan.png', title: "Bắc Kạn"),
-//     Location(img: 'assets/images/63S/baclieu.png', title: "Bạc Liêu"),
-//     Location(img: 'assets/images/63S/bacninh.png', title: "Bắc Ninh"),
-//     Location(img: 'assets/images/63S/bentre.png', title: "Bến Tre"),
-//     Location(img: 'assets/images/63S/binhduong.png', title: "Bình Dương"),
-//     Location(img: 'assets/images/63S/binhdinh.png', title: "Bình Định"),
-//     Location(img: 'assets/images/63S/binhphuoc.png', title: "Bình Phước"),
-//     Location(img: 'assets/images/63S/binhthuan.png', title: "Bình Thuận"),
-//     Location(img: 'assets/images/63S/camau.png', title: "Cà Mau"),
-//     Location(img: 'assets/images/63S/cantho.png', title: "Cần Thơ"),
-//     Location(img: 'assets/images/63S/caobang.png', title: "Cao Bằng"),
-//     Location(img: 'assets/images/63S/daklak.png', title: "Đắk Lắk"),
-//     Location(img: 'assets/images/63S/daknong.png', title: "Đắk Nông"),
-//     Location(img: 'assets/images/63S/danang.png', title: "Đà Nẵng"),
-//     Location(img: 'assets/images/63S/dienbien.png', title: "Điện Biên"),
-//     Location(img: 'assets/images/63S/dongnai.png', title: "Đồng Nai"),
-//     Location(img: 'assets/images/63S/dongthap.png', title: "Đồng Tháp"),
-//     Location(img: 'assets/images/63S/gialai.png', title: "Gia Lai"),
-//     Location(img: 'assets/images/63S/hagiang.png', title: "Hà Giang"),
-//     Location(img: 'assets/images/63S/hanam.png', title: "Hà Nam"),
-//     Location(img: 'assets/images/63S/hanoi.png', title: "Hà Nội"),
-//     Location(img: 'assets/images/63S/hatinh.png', title: "Hà Tĩnh"),
-//     Location(img: 'assets/images/63S/haiduong.png', title: "Hải Dương"),
-//     Location(img: 'assets/images/63S/haiphong.png', title: "Hải Phòng"),
-//     Location(img: 'assets/images/63S/haugiang.png', title: "Hậu Giang"),
-//     Location(img: 'assets/images/63S/hoabinh.png', title: "Hòa Bình"),
-//     Location(img: 'assets/images/63S/hue.png', title: "Huế"),
-//     Location(img: 'assets/images/63S/hungyen.png', title: "Hưng Yên"),
-//     Location(img: 'assets/images/63S/khanhhoa.png', title: "Khánh Hòa"),
-//     Location(img: 'assets/images/63S/kiengiang.png', title: "Kiên Giang"),
-//     Location(img: 'assets/images/63S/kontum.png', title: "Kon Tum"),
-//     Location(img: 'assets/images/63S/laichau.png', title: "Lai Châu"),
-//     Location(img: 'assets/images/63S/lamdong.png', title: "Lâm Đồng"),
-//     Location(img: 'assets/images/63S/langson.png', title: "Lạng Sơn"),
-//     Location(img: 'assets/images/63S/laocai.png', title: "Lào Cai"),
-//     Location(img: 'assets/images/63S/longan.png', title: "Long An"),
-//     Location(img: 'assets/images/63S/namdinh.png', title: "Nam Định"),
-//     Location(img: 'assets/images/63S/nghean.png', title: "Nghệ An"),
-//     Location(img: 'assets/images/63S/ninhbinh.png', title: "Ninh Bình"),
-//     Location(img: 'assets/images/63S/ninhthuan.png', title: "Ninh Thuận"),
-//     Location(img: 'assets/images/63S/phutho.png', title: "Phú Thọ"),
-//     Location(img: 'assets/images/63S/phuyen.png', title: "Phú Yên"),
-//     Location(img: 'assets/images/63S/quangbinh.png', title: "Quảng Bình"),
-//     Location(img: 'assets/images/63S/quangnam.png', title: "Quảng Nam"),
-//     Location(img: 'assets/images/63S/quangngai.png', title: "Quảng Ngãi"),
-//     Location(img: 'assets/images/63S/quangninh.png', title: "Quảng Ninh"),
-//     Location(img: 'assets/images/63S/quangtri.png', title: "Quảng Trị"),
-//     Location(img: 'assets/images/63S/soctrang.png', title: "Sóc Trăng"),
-//     Location(img: 'assets/images/63S/sonla.png', title: "Sơn La"),
-//     Location(img: 'assets/images/63S/tayninh.png', title: "Tây Ninh"),
-//     Location(img: 'assets/images/63S/thaibinh.png', title: "Thái Bình"),
-//     Location(img: 'assets/images/63S/thainguyen.png', title: "Thái Nguyên"),
-//     Location(img: 'assets/images/63S/thanhhoa.png', title: "Thanh Hóa"),
-//     Location(img: 'assets/images/63S/tiengiang.png', title: "Tiền Giang"),
-//     Location(img: 'assets/images/63S/hcm.png', title: "TP Hồ Chí Minh"),
-//     Location(img: 'assets/images/63S/travinh.png', title: "Trà Vinh"),
-//     Location(img: 'assets/images/63S/tuyenquang.png', title: "Tuyên Quang"),
-//     Location(img: 'assets/images/63S/vinhlong.png', title: "Vĩnh Long"),
-//     Location(img: 'assets/images/63S/vinhphuc.png', title: "Vĩnh Phúc"),
-//     Location(img: 'assets/images/63S/yenbai.png', title: "Yên Bái"),
-//   ];
+
+void main() {
+  runApp(MaterialApp(
+    debugShowCheckedModeBanner: false,
+    home: ProfilePage(),
+  ));
+}

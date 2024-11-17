@@ -1,5 +1,9 @@
+import 'dart:convert';
+
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:travelvn/widgets/home_bottom_bar.dart';
+import 'package:http/http.dart' as http;
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -9,8 +13,38 @@ class ProfilePage extends StatefulWidget {
 }
 
 class _ProfilePageState extends State<ProfilePage> {
-  int selectedTabIndex = 0; // 0: Dòng thời gian, 1: Giới thiệu, 2: Album, 3: Đang theo dõi, 4: Viết bài
+  final Dio _dio = Dio(); // Sử dụng Dio cho API
+  int selectedTabIndex = 0; // Tab hiện tại
+  bool isLoading = true;
 
+  Map<String, dynamic> userData = {}; // Dữ liệu người dùng
+  List<dynamic> destinations = []; // Danh sách điểm đến
+
+  @override
+  void initState() {
+    super.initState();
+    fetchUserData();
+  }
+  // Gọi API để lấy dữ liệu người dùng
+  Future<void> fetchUserData() async {
+    try {
+      final response = await http.get(Uri.parse('http://192.168.0.149:8800/v1/user/'));
+
+      if (response.statusCode == 200) {
+        final List<dynamic> data = json.decode(response.body);
+        setState(() {
+          // Assuming you're picking the first user in the list for now
+          userData = data.isNotEmpty ? data[1] : {};
+          isLoading = false; // Finished loading
+        });
+      } else {
+        throw Exception('Failed to load userData');
+      }
+    } catch (error) {
+      print('Error fetching userData: $error');
+    }
+  }
+  
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -22,17 +56,17 @@ class _ProfilePageState extends State<ProfilePage> {
           text: TextSpan(
             children: [
               TextSpan(
-                  text: "Travel",
-                  style: TextStyle(
-                      color: Colors.blue,
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold)),
+                text: "Travel",
+                style: TextStyle(
+                    color: Colors.blue,
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold)),
               TextSpan(
-                  text: "VietNam",
-                  style: TextStyle(
-                      color: Colors.red,
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold)),
+                text: "VietNam",
+                style: TextStyle(
+                    color: Colors.red,
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold)),
             ],
           ),
         ),
@@ -89,13 +123,26 @@ class _ProfilePageState extends State<ProfilePage> {
                 padding: const EdgeInsets.all(16.0),
                 child: Column(
                   children: [
+                    Row(
+                            children: [
+                              // Check if username is available
+                              Text(
+                                userData['username'] ?? 'Tên người dùng', // Fallback to default text if null
+                                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                                textAlign: TextAlign.center,
+                              ),
+                            ],
+                          ),
+                    SizedBox(width: 16,),
                     // Profile Image and Stats Row
                     Row(
                       children: [
-                        CircleAvatar(
-                          radius: 40,
-                          backgroundColor: Colors.blue,
-                        ),
+                              CircleAvatar(
+                                radius: 40,
+                                backgroundImage: userData['avatar'] != null
+                                    ? NetworkImage('http://192.168.0.149:8800/v1/img/${userData['avatar']}')
+                                    : AssetImage('assets/img/default_avatar.jpg') as ImageProvider,
+                              ),
                         SizedBox(width: 16),
                         Expanded(
                           child: Column(
@@ -202,11 +249,11 @@ class _ProfilePageState extends State<ProfilePage> {
                         style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                       ),
                       SizedBox(height: 20),
-                      buildPersonalInfoRow('Họ và tên', 'NNTN'),
-                      buildPersonalInfoRow('Email', 'nntn@gmail.com'),
-                      buildPersonalInfoRow('Số điện thoại', '0123456'),
-                      buildPersonalInfoRow('Ngày sinh', '15-01-2004'),
-                      buildPersonalInfoRow('Giới tính', 'Nữ'),
+                      buildPersonalInfoRow('Họ và tên', userData['fullname'] ?? 'N/A'),
+                      buildPersonalInfoRow('Email', userData['fullname'] ?? 'N/A'),
+                      buildPersonalInfoRow('Số điện thoại', userData['phone'] ?? 'N/A'),
+                      buildPersonalInfoRow('Ngày sinh', userData['birthday'] ?? 'N/A'),
+                      buildPersonalInfoRow('Giới tính', userData['gender'] ?? 'N/A'),
                     ],
                   ),
                 )
@@ -308,6 +355,7 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
+
   // Helper function to build statistic column
   Column buildStatColumn(String number, String label) {
     return Column(
@@ -325,6 +373,7 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   // Helper function to build personal info row
+  // Helper function to build personal info row
   Widget buildPersonalInfoRow(String title, String value) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
@@ -340,6 +389,7 @@ class _ProfilePageState extends State<ProfilePage> {
       ),
     );
   }
+
 }
 
 void main() {

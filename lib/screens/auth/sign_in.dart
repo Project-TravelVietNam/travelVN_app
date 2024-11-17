@@ -14,23 +14,22 @@ class SignIn extends StatefulWidget {
 }
 
 class _SignInState extends State<SignIn> {
-  final TextEditingController emailController = TextEditingController();
+  final TextEditingController usernameController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
   bool isLoading = false;
   bool isPasswordVisible = false;
 
   @override
   void dispose() {
-    emailController.dispose();
+    usernameController.dispose();
     passwordController.dispose();
     super.dispose();
   }
 
-  Future<void> signInUser() async {
+  Future<void> loginUser() async {
     setState(() {
       isLoading = true;
     });
-
     try {
       final response = await http.post(
         Uri.parse('http://192.168.0.149:8800/v1/user/login'),
@@ -38,7 +37,7 @@ class _SignInState extends State<SignIn> {
           'Content-Type': 'application/json; charset=UTF-8',
         },
         body: jsonEncode(<String, String>{
-          'email': emailController.text,
+          'username': usernameController.text,
           'password': passwordController.text,
         }),
       );
@@ -102,7 +101,38 @@ class _SignInState extends State<SignIn> {
                 style: TextStyle(fontSize: 18, height: 1.2),
               ),
               SizedBox(height: size.height * 0.04),
-              buildTextField("Nhập email", emailController, false),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  socialIcon("assets/images/facebook.png", "Facebook"),
+                  socialIcon("assets/images/google.png", "Google"),
+                ],
+              ),
+              SizedBox(height: size.height * 0.06),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    height: 2,
+                    width: size.width * 0.2,
+                    color: Colors.black12,
+                  ),
+                  const Text(
+                    "  Hoặc   ",
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
+                  Container(
+                    height: 2,
+                    width: size.width * 0.2,
+                    color: Colors.black12,
+                  ),
+                ],
+              ),
+              SizedBox(height: size.height * 0.04),
+              buildTextField("Nhập username", usernameController, false),
               const SizedBox(height: 10),
               buildTextField("Mật khẩu", passwordController, true),
               const SizedBox(height: 10),
@@ -119,21 +149,82 @@ class _SignInState extends State<SignIn> {
               else
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 25),
-                  child: ElevatedButton(
-                    onPressed: signInUser,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColor.main,
-                      minimumSize: const Size(200, 60),
-                    ),
-                    child: const Text(
-                      "Đăng nhập",
-                      style: TextStyle(fontSize: 22, color: AppColor.light),
-                    ),
+                  child: Column(
+                    children: [
+                      ElevatedButton(
+                        onPressed: loginUser,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColor.main,
+                          minimumSize: const Size(200, 60),
+                        ),
+                        child: const Text(
+                          "Đăng nhập",
+                          style: TextStyle(fontSize: 22, color: AppColor.light),
+                        ),
+                      ),
+                      SizedBox(height: size.height * 0.04),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Text("Bạn chưa có tài khoản?",
+                              style: TextStyle(fontSize: 16)),
+                          TextButton(
+                              onPressed: () {
+                                Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                        builder: (BuildContext context) =>
+                                            SignUp()));
+                              },
+                              child: const Text("Đăng ký",
+                                  style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                      color: AppColor.main)))
+                        ],
+                      ),
+                    ],
                   ),
                 ),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  //social button
+  Container socialIcon(String image, String nameIcon) {
+    Size size = MediaQuery.of(context).size; // lấy size của màn hình
+    return Container(
+      width: (size.width - 60) / 2,
+      padding: EdgeInsets.symmetric(
+        vertical: 14,
+        horizontal: size.width * 0.05,
+      ),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: AppColor.dark.withOpacity(0.1),
+          width: 2,
+        ),
+        color: AppColor.light.withOpacity(0.1),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Image.asset(
+            image,
+            height: size.width * 0.08,
+          ),
+          const SizedBox(width: 8),
+          Text(
+            nameIcon,
+            style: TextStyle(
+              fontSize: size.width * 0.045,
+            ),
+          ),
+        ],
       ),
     );
   }

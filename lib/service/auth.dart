@@ -1,58 +1,74 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 
 class AuthService {
-  //firestore
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  //auth
-  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final String baseUrl = 'http://192.168.0.149:8800'; // URL của server Node.js của bạn
 
-  // Đăng ký
-  Future<String> signUpUser(
-      {required String email,
-      required String password,
-      required String confirmPassword}) async {
-    String res;
-    try {
-      if (email.isNotEmpty ||
-          password.isNotEmpty ||
-          confirmPassword.isNotEmpty) {
-        // kiểm tra pass
-        if (password == confirmPassword) {
-          UserCredential credential = await _auth
-              .createUserWithEmailAndPassword(email: email, password: password);
-          // add dữ liệu vào firestrore
-          await _firestore
-              .collection("users")
-              .doc(credential.user!.uid)
-              .set({'email': email, 'uid': credential.user!.uid});
-          return res = "Đăng ký thành công!";
-        } else {
-          return res = "Mật khẩu không trùng khớp!";
-        }
-      } else {
-        return res = "Vui lòng điền đầy đủ thông tin!";
-      }
-    } catch (e) {
-      return e.toString();
-    }
-  }
-  // Đăng nhập
-  Future<String> loginUser({ 
-    required String email,
-    required String password 
+  // Đăng ký người dùng
+  Future<String> addUser({
+    required String username,
+    required String password,
+    required String confirmPassword,
   }) async {
     String res;
-    try{
-      if(email.isNotEmpty || password.isNotEmpty){
-        //email và password
-        await _auth.signInWithEmailAndPassword(email: email, password: password);
-        return res = "Đăng nhập thành công!";
-      }else{
-        return res = "Vui lòng điền đầy đủ thông tin!";
+    try {
+      if (username.isNotEmpty && password.isNotEmpty && confirmPassword.isNotEmpty) {
+        if (password == confirmPassword) {
+          final response = await http.post(
+            Uri.parse('$baseUrl/v1/user/register'),
+            headers: {'Content-Type': 'application/json'},
+            body: json.encode({
+              'username': username,
+              'password': password,
+              'confirmPassword': confirmPassword,
+            }),
+          );
+
+          final responseData = json.decode(response.body);
+          if (response.statusCode == 201) {
+            res = "Đăng ký thành công!";
+          } else {
+            res = responseData['message'];
+          }
+        } else {
+          res = "Mật khẩu không trùng khớp!";
+        }
+      } else {
+        res = "Vui lòng điền đầy đủ thông tin!";
       }
-    } catch(e){
-      return e.toString();
-    } 
+    } catch (e) {
+      res = 'Lỗi: $e';
+    }
+    return res;
+  }
+
+  // Đăng nhập người dùng
+  Future<String> loginUser({required String username, required String password}) async {
+    String res;
+    try {
+      if (username.isNotEmpty && password.isNotEmpty) {
+        final response = await http.post(
+          Uri.parse('$baseUrl/v1/user/login'),
+          headers: {'Content-Type': 'application/json'},
+          body: json.encode({
+            'username': username,
+            'password': password,
+          }),
+        );
+
+        final responseData = json.decode(response.body);
+        if (response.statusCode == 200) {
+          res = "Đăng nhập thành công!";
+          // Bạn có thể lưu token JWT ở đây, ví dụ: SharedPreferences hoặc trong một state nào đó
+        } else {
+          res = responseData['message'];
+        }
+      } else {
+        res = "Vui lòng điền đầy đủ thông tin!";
+      }
+    } catch (e) {
+      res = 'Lỗi: $e';
+    }
+    return res;
   }
 }

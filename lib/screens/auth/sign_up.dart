@@ -1,9 +1,10 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:travelvn/screens/auth/sign_in.dart';
 import 'package:travelvn/screens/home.dart';
-import 'package:travelvn/service/auth.dart';
 import 'package:travelvn/themes/app_color.dart';
 import 'package:travelvn/widgets/snack_bar.dart';
+import 'package:http/http.dart' as http;
 
 class SignUp extends StatefulWidget {
   const SignUp({super.key});
@@ -13,44 +14,55 @@ class SignUp extends StatefulWidget {
 }
 
 class _SignUpState extends State<SignUp> {
-  // Controllers
-  final TextEditingController emailController = TextEditingController();
+  final TextEditingController usernameController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
   final TextEditingController confirmPasswordController =
       TextEditingController();
-
   bool isLoading = false;
+  bool isPasswordVisible = false;
+  bool isConfirmPasswordVisible = false;
 
   @override
   void dispose() {
-    emailController.dispose();
+    usernameController.dispose();
     passwordController.dispose();
     confirmPasswordController.dispose();
-    super.dispose();                      
+    super.dispose();
   }
 
-  void signUpUser() async {
+  Future<void> addUser() async {
     setState(() {
-      isLoading = true; // Bắt đầu trạng thái tải
+      isLoading = true;
     });
-    String res = await AuthService().signUpUser(
-      email: emailController.text,
-      password: passwordController.text,
-      confirmPassword: confirmPasswordController.text,
-    );
-    // Đăng ký thành công
-    if (res == "Đăng ký thành công!") {
-      showSnackBar(context, res);
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (context) => const HomePage()),
+    try {
+      final response = await http.post(
+        Uri.parse('http://192.168.0.149:8800/v1/user/register'),
+        headers: <String, String>{
+          'Content-Type': 'application/json; charset=UTF-8',
+        },
+        body: jsonEncode(<String, String>{
+          'username': usernameController.text,
+          'password': passwordController.text,
+          'confirmPassword': confirmPasswordController.text,
+        }),
       );
-    } else {
-      // Hiện thông báo lỗi
-      showSnackBar(context, res);
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> data = json.decode(response.body);
+        showSnackBar(context, data['message'] ?? 'Đăng ký thành công!');
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (context) => const HomePage()),
+        );
+      } else {
+        showSnackBar(context, 'Đăng ký thất bại: ${response.statusCode}');
+      }
+    } catch (e) {
+      showSnackBar(context, 'Lỗi khi đăng ký: $e');
+    } finally {
+      setState(() {
+        isLoading = false;
+      });
     }
-    setState(() {
-      isLoading = false; // Kết thúc trạng thái tải
-    });
   }
 
   @override
@@ -110,13 +122,10 @@ class _SignUpState extends State<SignUp> {
                 ],
               ),
               SizedBox(height: size.height * 0.06),
-              // Nhập email
-              buildTextField("Nhập email", emailController, false),
+              buildTextField("Nhập username", usernameController, false),
               const SizedBox(height: 10),
-              // Nhập mật khẩu
               buildTextField("Mật khẩu", passwordController, true),
               const SizedBox(height: 10),
-              // Nhập lại mật khẩu
               buildTextField(
                   "Nhập lại mật khẩu", confirmPasswordController, true),
               SizedBox(height: size.height * 0.03),
@@ -124,9 +133,8 @@ class _SignUpState extends State<SignUp> {
                 padding: const EdgeInsets.symmetric(horizontal: 25),
                 child: Column(
                   children: [
-                    // Nút đăng ký
                     ElevatedButton(
-                      onPressed: isLoading ? null : signUpUser,
+                      onPressed: isLoading ? null : addUser,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColor.main,
                         minimumSize: const Size(200, 60),
@@ -180,7 +188,7 @@ class _SignUpState extends State<SignUp> {
 
   //social button
   Container socialIcon(String image, String nameIcon) {
-    Size size = MediaQuery.of(context).size; // lấy size của màn hình 
+    Size size = MediaQuery.of(context).size;
     return Container(
       width: (size.width - 60) / 2,
       padding: EdgeInsets.symmetric(
@@ -213,39 +221,38 @@ class _SignUpState extends State<SignUp> {
       ),
     );
   }
-  // Hàm tạo box nhập văn bản
+
   Container buildTextField(
       String hint, TextEditingController controller, bool isPassword) {
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 25,
-        vertical: 10,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 10),
       child: TextField(
         controller: controller,
-        obscureText: isPassword, // Ẩn văn bản nếu là mật khẩu
+        obscureText: isPassword && !(isPassword == true ? isPasswordVisible : false),
         decoration: InputDecoration(
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 20,
-            vertical: 22,
-          ),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 22),
           fillColor: AppColor.light,
           filled: true,
           border: OutlineInputBorder(
             borderSide: BorderSide(color: AppColor.dark),
             borderRadius: BorderRadius.circular(15),
           ),
-          focusedBorder: OutlineInputBorder(
-            borderSide: BorderSide(color: AppColor.dark),
-            borderRadius: BorderRadius.circular(15),
-          ),
           hintText: hint,
-          hintStyle: const TextStyle(
-            color: Colors.black45,
-            fontSize: 19,
-          ),
+          hintStyle: const TextStyle(color: Colors.black45, fontSize: 19),
           suffixIcon: isPassword
-              ? const Icon(Icons.visibility_off_outlined, color: Colors.black45)
+              ? IconButton(
+                  icon: Icon(
+                    isPasswordVisible
+                        ? Icons.visibility
+                        : Icons.visibility_off,
+                    color: Colors.black45,
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      isPasswordVisible = !isPasswordVisible;
+                    });
+                  },
+                )
               : null,
         ),
       ),
