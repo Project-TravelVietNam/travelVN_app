@@ -1,6 +1,7 @@
 import 'package:curved_navigation_bar/curved_navigation_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:travelvn/screens/blog.dart';
+import 'package:travelvn/screens/favorite.dart';
 import 'package:travelvn/screens/home.dart';
 import 'package:travelvn/screens/local.dart';
 import 'package:travelvn/screens/profile_page.dart';
@@ -61,6 +62,12 @@ class _HomeBottomBarState extends State<HomeBottomBar> {
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(builder: (context) => LocalPage()), // Chuyển đến ProfilePage
+          );
+        }
+        else if (index == 1) { // Nhấn vào icon Person (Profile)
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => FavoritePage()), // Chuyển đến FavoritePage
           );
         }
       },

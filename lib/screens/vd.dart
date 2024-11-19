@@ -1,5 +1,13 @@
+import 'dart:convert';
+import 'dart:io';
+
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:travelvn/widgets/home_bottom_bar.dart';
+import 'package:http/http.dart' as http;
+
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -9,7 +17,117 @@ class ProfilePage extends StatefulWidget {
 }
 
 class _ProfilePageState extends State<ProfilePage> {
-  int selectedTabIndex = 0; // 0: Dòng thời gian, 1: Giới thiệu, 2: Album, 3: Đang theo dõi, 4: Viết bài
+  final Dio _dio = Dio(); // Sử dụng Dio cho API
+  final TextEditingController _fullNameController = TextEditingController();
+  final TextEditingController _phoneController = TextEditingController();
+  final TextEditingController _birthdayController = TextEditingController();
+  final TextEditingController _genderController = TextEditingController();
+  File? _avatarFile;
+  int selectedTabIndex = 0; // Tab hiện tại
+  bool isLoading = true;
+
+  Map<String, dynamic> userData = {}; // Dữ liệu người dùng
+  List<dynamic> destinations = []; // Danh sách điểm đến
+
+  @override
+  void initState() {
+    super.initState();
+    fetchUserData();
+  }
+  // Gọi API để lấy dữ liệu người dùng
+  Future<void> fetchUserData() async {
+    try {
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      String? token = prefs.getString('auth_token');
+      if (token == null) throw Exception('Token is missing');
+
+      var response = await _dio.get(
+        'http://192.168.0.149:8800/v1/user/me',
+        options: Options(headers: {
+          'Cookie': 'access_token=$token',
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        setState(() {
+          userData = response.data;
+          _fullNameController.text = userData['fullname'] ?? '';
+          _phoneController.text = userData['phone'] ?? '';
+          _birthdayController.text = userData['birthday'] ?? '';
+          _genderController.text = userData['gender'] ?? '';
+          isLoading = false;
+        });
+      } else {
+        throw Exception('Failed to load user data');
+      }
+    } catch (error) {
+      print('Error fetching user data: $error');
+      setState(() {
+        isLoading = false;
+      });
+    }
+  }
+
+  Future<void> updateProfile() async {
+    try {
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      String? token = prefs.getString('auth_token');
+      if (token == null) throw Exception('Token is missing');
+
+      Map<String, dynamic> data = {
+        'fullname': _fullNameController.text,
+        'phone': _phoneController.text,
+        'birthday': _birthdayController.text,
+        'gender': _genderController.text,
+      };
+
+      if (_avatarFile != null) {
+        String fileName = _avatarFile!.path.split('/').last;
+        FormData formData = FormData.fromMap({
+          ...data,
+          'avatar': await MultipartFile.fromFile(_avatarFile!.path, filename: fileName),
+        });
+
+        await _dio.post(
+          'http://192.168.0.149:8800/v1/img/upload',
+          data: formData,
+          options: Options(headers: {
+            'Cookie': 'access_token=$token',
+            'Content-Type': 'multipart/form-data',
+          }),
+        );
+      } else {
+        await _dio.put(
+          'http://192.168.0.149:8800/v1/user/:id',
+          data: json.encode(data),
+          options: Options(headers: {
+            'Cookie': 'access_token=$token',
+            'Content-Type': 'application/json',
+          }),
+        );
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Profile updated successfully!')),
+      );
+      fetchUserData();
+    } catch (error) {
+      print('Error updating profile: $error');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to update profile')),
+      );
+    }
+  }
+
+  Future<void> pickImage() async {
+    final ImagePicker picker = ImagePicker();
+    final XFile? pickedFile = await picker.pickImage(source: ImageSource.gallery);
+    if (pickedFile != null) {
+      setState(() {
+        _avatarFile = File(pickedFile.path);
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -22,17 +140,17 @@ class _ProfilePageState extends State<ProfilePage> {
           text: TextSpan(
             children: [
               TextSpan(
-                  text: "Travel",
-                  style: TextStyle(
-                      color: Colors.blue,
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold)),
+                text: "Travel",
+                style: TextStyle(
+                    color: Colors.blue,
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold)),
               TextSpan(
-                  text: "VietNam",
-                  style: TextStyle(
-                      color: Colors.red,
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold)),
+                text: "VietNam",
+                style: TextStyle(
+                    color: Colors.red,
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold)),
             ],
           ),
         ),
@@ -91,23 +209,29 @@ class _ProfilePageState extends State<ProfilePage> {
                   children: [
                     Row(
                       children: [
+                        // Check if username is available
                         Text(
-                          'Nguyễn Văn A', // Tên người dùng
+                          userData['username'] ?? 'Tên người dùng', // Fallback to default text if null
                           style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                           textAlign: TextAlign.center,
                         ),
-                        
                       ],
-      
                     ),
                     SizedBox(width: 16,),
                     // Profile Image and Stats Row
                     Row(
                       children: [
-                        CircleAvatar(
-                          radius: 40,
-                          backgroundColor: Colors.blue,
-                        ),
+                    GestureDetector(
+                      onTap: pickImage,
+                      child: CircleAvatar(
+                        radius: 50,
+                        backgroundImage: _avatarFile != null
+                            ? FileImage(_avatarFile!)
+                            : (userData['avatar'] != null
+                                ? NetworkImage('http://192.168.0.149:8800/v1/img/${userData['avatar']}')
+                                : AssetImage('assets/img/default_avatar.jpg')) as ImageProvider,
+                      ),
+                    ),
                         SizedBox(width: 16),
                         Expanded(
                           child: Column(
@@ -213,12 +337,36 @@ class _ProfilePageState extends State<ProfilePage> {
                         'THÔNG TIN CÁ NHÂN',
                         style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                       ),
+                      TextField(
+                      controller: _fullNameController,
+                      decoration: InputDecoration(labelText: 'Full Name'),
+                    ),
+                    SizedBox(height: 10),
+                    TextField(
+                      controller: _phoneController,
+                      decoration: InputDecoration(labelText: 'Phone'),
+                    ),
+                    SizedBox(height: 10),
+                    TextField(
+                      controller: _birthdayController,
+                      decoration: InputDecoration(labelText: 'Birthday'),
+                    ),
+                    SizedBox(height: 10),
+                    TextField(
+                      controller: _genderController,
+                      decoration: InputDecoration(labelText: 'Gender'),
+                    ),
+                    SizedBox(height: 20),
+                    ElevatedButton(
+                      onPressed: updateProfile,
+                      child: Text('Update Profile'),
+                    ),
                       SizedBox(height: 20),
-                      buildPersonalInfoRow('Họ và tên', 'NNTN'),
-                      buildPersonalInfoRow('Email', 'nntn@gmail.com'),
-                      buildPersonalInfoRow('Số điện thoại', '0123456'),
-                      buildPersonalInfoRow('Ngày sinh', '15-01-2004'),
-                      buildPersonalInfoRow('Giới tính', 'Nữ'),
+                      buildPersonalInfoRow('Họ và tên', userData['fullname'] ?? 'N/A'),
+                      buildPersonalInfoRow('Email', userData['fullname'] ?? 'N/A'),
+                      buildPersonalInfoRow('Số điện thoại', userData['phone'] ?? 'N/A'),
+                      buildPersonalInfoRow('Ngày sinh', userData['birthday'] ?? 'N/A'),
+                      buildPersonalInfoRow('Giới tính', userData['gender'] ?? 'N/A'),
                     ],
                   ),
                 )
@@ -352,6 +500,7 @@ class _ProfilePageState extends State<ProfilePage> {
       ),
     );
   }
+
 }
 
 void main() {

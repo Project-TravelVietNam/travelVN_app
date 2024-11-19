@@ -16,6 +16,7 @@ class _LocalPageState extends State<LocalPage> {
   final List<String> category = ['Tất cả địa điểm', 'Lịch sử', 'Văn hóa Ẩm thực'];
   String selectedCategory = 'Tất cả địa điểm';
   List<dynamic> locations = [];
+  Set<int> favoriteLocations = {}; // Lưu các địa điểm được yêu thích
 
   Future<List<dynamic>> fetchLocations(String category) async {
     String apiUrl;
@@ -57,6 +58,16 @@ class _LocalPageState extends State<LocalPage> {
     });
   }
 
+  void _toggleFavorite(int index) {
+    setState(() {
+      if (favoriteLocations.contains(index)) {
+        favoriteLocations.remove(index);
+      } else {
+        favoriteLocations.add(index);
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -75,7 +86,7 @@ class _LocalPageState extends State<LocalPage> {
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
-                color: Colors.blueAccent,
+                color: const Color.fromARGB(255, 0, 0, 0),
               ),
             ),
           ),
@@ -121,14 +132,19 @@ class _LocalPageState extends State<LocalPage> {
           Expanded(
             child: locations.isEmpty
                 ? Center(child: CircularProgressIndicator())
-                : ListView.builder(
+                : GridView.builder(
                     padding: EdgeInsets.all(16.0),
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      crossAxisSpacing: 16.0,
+                      mainAxisSpacing: 16.0,
+                      childAspectRatio: 0.8,
+                    ),
                     itemCount: locations.length,
                     itemBuilder: (context, index) {
                       final location = locations[index];
 
                       String imageUrl = '';
-
                       if (selectedCategory == 'Lịch sử' && location['imgHistory'] != null) {
                         var imgHistory = location['imgHistory'] is List ? location['imgHistory'][0] : location['imgHistory'];
                         imageUrl = 'http://192.168.0.149:8800/v1/img/$imgHistory';
@@ -147,15 +163,13 @@ class _LocalPageState extends State<LocalPage> {
                       return GestureDetector(
                         onTap: () {
                           if (selectedCategory == 'Lịch sử') {
-                            // Điều hướng đến DetailHistory khi nhấn vào mục Lịch sử
                             Navigator.push(
                               context,
                               MaterialPageRoute(
                                 builder: (context) => DetailHistory(location: location),
                               ),
                             );
-                          } else if (selectedCategory == 'Văn Hóa Ẩm Thực') {
-                            // Điều hướng đến DetailCulural khi nhấn vào mục Văn Hóa Ẩm Thực
+                          } else if (selectedCategory == 'Văn hóa Ẩm thực') {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
@@ -163,7 +177,6 @@ class _LocalPageState extends State<LocalPage> {
                               ),
                             );
                           } else {
-                            // Điều hướng đến Detail khi không phải là Lịch sử hay Văn Hóa Ẩm Thực
                             Navigator.push(
                               context,
                               MaterialPageRoute(
@@ -172,85 +185,68 @@ class _LocalPageState extends State<LocalPage> {
                             );
                           }
                         },
-
-                        child: Card(
-                          elevation: 4.0,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(20.0),
-                          ),
-                          margin: EdgeInsets.only(bottom: 16.0),
-                          child: Row(
-                            children: [
-                              ClipRRect(
-                                borderRadius: BorderRadius.circular(12.0),
+                        child: Stack(
+                          children: [
+                            Container(
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(20),
+                                image: DecorationImage(
+                                  image: NetworkImage(imageUrl),
+                                  fit: BoxFit.cover,
+                                ),
+                              ),
+                              child: Align(
+                                alignment: Alignment.bottomCenter,
                                 child: Container(
-                                  height: 80,
-                                  width: 80,
-                                  child: Image.network(
-                                    imageUrl,
-                                    fit: BoxFit.cover,
-                                    loadingBuilder: (context, child, loadingProgress) {
-                                      if (loadingProgress == null) return child;
-                                      return Center(
-                                        child: CircularProgressIndicator(
-                                          value: loadingProgress.expectedTotalBytes != null
-                                              ? loadingProgress.cumulativeBytesLoaded /
-                                                  (loadingProgress.expectedTotalBytes ?? 1)
-                                              : null,
-                                        ),
-                                      );
-                                    },
-                                    errorBuilder: (context, error, stackTrace) {
-                                      return Container(
-                                        width: 80.0,
-                                        height: 80.0,
-                                        color: Colors.grey[200],
-                                        child: Icon(
-                                          Icons.broken_image,
-                                          color: Colors.grey,
-                                          size: 40.0,
-                                        ),
-                                      );
-                                    },
+                                  padding: EdgeInsets.all(8.0),
+                                  decoration: BoxDecoration(
+                                    color: Colors.black.withOpacity(0.4),
+                                    borderRadius: BorderRadius.only(
+                                      bottomLeft: Radius.circular(20),
+                                      bottomRight: Radius.circular(20),
+                                    ),
+                                  ),
+                                  child: Text(
+                                    location['title'] ?? 'Tên địa điểm',
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 16.0,
+                                    ),
                                   ),
                                 ),
                               ),
-                              SizedBox(width: 16.0),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      location['title'] ?? 'Tên địa điểm',
-                                      style: TextStyle(
-                                        fontSize: 18.0,
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.black87,
+                            ),
+                            Positioned(
+                              top: 8,
+                              right: 8,
+                              child: GestureDetector(
+                                onTap: () => _toggleFavorite(index),
+                                child: Container(
+                                  padding: EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: Colors.black.withOpacity(0.4),
+                                    shape: BoxShape.circle,
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withOpacity(0.2),
+                                        blurRadius: 10,
+                                        offset: Offset(0, 5),
                                       ),
-                                    ),
-                                    SizedBox(height: 8),
-                                    Text(
-                                      location['region']?['name'] ?? 'Tên Tỉnh',
-                                      style: TextStyle(
-                                        fontSize: 13.0,
-                                        color: Colors.grey.shade600,
-                                      ),
-                                    ),
-                                    Icon(
-                                      Icons.location_on,
-                                      color: Colors.blueAccent,
-                                      size: 20.0,
-                                    ),
-                                  ],
+                                    ],
+                                  ),
+                                  child: Icon(
+                                    favoriteLocations.contains(index)
+                                        ? Icons.favorite
+                                        : Icons.favorite_border,
+                                    color: const Color.fromARGB(255, 255, 255, 255),
+                                    size: 24,
+                                  ),
                                 ),
                               ),
-                              Icon(
-                                Icons.arrow_forward_ios,
-                                color: Colors.grey.shade400,
-                                size: 20.0,
-                              ),
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
                       );
                     },

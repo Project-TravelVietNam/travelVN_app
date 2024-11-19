@@ -1,9 +1,13 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:travelvn/widgets/home_bottom_bar.dart';
 import 'package:http/http.dart' as http;
+import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -14,6 +18,13 @@ class ProfilePage extends StatefulWidget {
 
 class _ProfilePageState extends State<ProfilePage> {
   final Dio _dio = Dio(); // Sử dụng Dio cho API
+  final TextEditingController _usernameController = TextEditingController();
+  final TextEditingController _fullNameController = TextEditingController();
+  final TextEditingController _phoneController = TextEditingController();
+  final TextEditingController _birthdayController = TextEditingController();
+  final TextEditingController _genderController = TextEditingController();
+  final TextEditingController _bioController = TextEditingController();
+  File? _avatarFile;
   int selectedTabIndex = 0; // Tab hiện tại
   bool isLoading = true;
 
@@ -25,26 +36,153 @@ class _ProfilePageState extends State<ProfilePage> {
     super.initState();
     fetchUserData();
   }
+
+  // Hàm định dạng ngày tháng từ ISO sang dd/MM/yyyy
+  String formatDate(String isoDate) {
+    try {
+      DateTime parsedDate = DateTime.parse(isoDate);
+      return DateFormat('dd/MM/yyyy').format(parsedDate);
+    } catch (e) {
+      return isoDate; // Trả về nguyên bản nếu lỗi
+    }
+  }
+
+  // Hàm ngược lại để gửi ngày tháng lên server từ dd/MM/yyyy về ISO
+  String formatDateToISO(String formattedDate) {
+    try {
+      DateTime parsedDate = DateFormat('dd/MM/yyyy').parse(formattedDate);
+      return parsedDate.toIso8601String().split('T').first; // Chỉ lấy phần ngày
+    } catch (e) {
+      return formattedDate; // Trả về nguyên bản nếu lỗi
+    }
+  }
+
   // Gọi API để lấy dữ liệu người dùng
   Future<void> fetchUserData() async {
     try {
-      final response = await http.get(Uri.parse('http://192.168.0.149:8800/v1/user/'));
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      String? token = prefs.getString('auth_token');
+      if (token == null) throw Exception('Token is missing');
+
+      var response = await _dio.get(
+        'http://192.168.0.149:8800/v1/user/me',
+        options: Options(headers: {
+          'Cookie': 'access_token=$token',
+        }),
+      );
 
       if (response.statusCode == 200) {
-        final List<dynamic> data = json.decode(response.body);
         setState(() {
-          // Assuming you're picking the first user in the list for now
-          userData = data.isNotEmpty ? data[1] : {};
-          isLoading = false; // Finished loading
+          userData = response.data;
+          _usernameController.text = userData['username'] ?? '';
+          _fullNameController.text = userData['fullname'] ?? '';
+          _phoneController.text = userData['phone'] ?? '';
+          _birthdayController.text =
+              userData['birthday'] != null ? formatDate(userData['birthday']) : '';
+          _genderController.text = userData['gender'] ?? '';
+          _bioController.text = userData['bio'] ?? '';
+          isLoading = false;
         });
       } else {
-        throw Exception('Failed to load userData');
+        throw Exception('Failed to load user data');
       }
     } catch (error) {
-      print('Error fetching userData: $error');
+      print('Error fetching user data: $error');
+      setState(() {
+        isLoading = false;
+      });
     }
   }
-  
+
+  Future<void> updateProfile() async {
+    try {
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      String? token = prefs.getString('auth_token');
+      if (token == null) throw Exception('Token is missing');
+
+      Map<String, dynamic> data = {
+        'username': _usernameController.text,
+        'fullname': _fullNameController.text,
+        'phone': _phoneController.text,
+        'birthday': formatDateToISO(_birthdayController.text),
+        'gender': _genderController.text,
+        'bio': _bioController.text,
+      };
+
+      if (_avatarFile != null) {
+        String fileName = _avatarFile!.path.split('/').last;
+        FormData formData = FormData.fromMap({
+          ...data,
+          'avatar': await MultipartFile.fromFile(_avatarFile!.path, filename: fileName),
+        });
+
+        var response = await _dio.post(
+        'http://192.168.0.149:8800/v1/user/update',
+        data: formData,
+        options: Options(headers: {
+          'Cookie': 'access_token=$token',
+          'Content-Type': 'multipart/form-data',
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Profile updated successfully!')),
+        );
+        fetchUserData();
+      }
+    } else {
+      // Xử lý update thông tin cơ bản
+      var response = await _dio.put(
+        'http://192.168.0.149:8800/v1/user/${userData['_id']}',
+        data: json.encode(data),
+        options: Options(headers: {
+          'Cookie': 'access_token=$token',
+          'Content-Type': 'application/json',
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Profile updated successfully!')),
+        );
+        fetchUserData();
+      }
+    }
+  } catch (error) {
+    print('Error updating profile: $error');
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Failed to update profile')),
+    );
+  }
+}
+
+// DatePicker để chọn ngày tháng
+  Future<void> _selectDate(BuildContext context) async {
+    DateTime? pickedDate = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime(1900),
+      lastDate: DateTime(2100),
+    );
+
+    if (pickedDate != null) {
+      setState(() {
+        _birthdayController.text = DateFormat('dd/MM/yyyy').format(pickedDate);
+      });
+    }
+  }
+
+  Future<void> pickImage() async {
+    final ImagePicker picker = ImagePicker();
+    final XFile? pickedFile = await picker.pickImage(source: ImageSource.gallery);
+    if (pickedFile != null) {
+      setState(() {
+        _avatarFile = File(pickedFile.path);
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -124,25 +262,30 @@ class _ProfilePageState extends State<ProfilePage> {
                 child: Column(
                   children: [
                     Row(
-                            children: [
-                              // Check if username is available
-                              Text(
-                                userData['username'] ?? 'Tên người dùng', // Fallback to default text if null
-                                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                                textAlign: TextAlign.center,
-                              ),
-                            ],
-                          ),
+                      children: [
+                        // Check if username is available
+                        Text(
+                          userData['username'] ?? 'Tên người dùng', // Fallback to default text if null
+                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ),
                     SizedBox(width: 16,),
                     // Profile Image and Stats Row
                     Row(
                       children: [
-                              CircleAvatar(
-                                radius: 40,
-                                backgroundImage: userData['avatar'] != null
-                                    ? NetworkImage('http://192.168.0.149:8800/v1/img/${userData['avatar']}')
-                                    : AssetImage('assets/img/default_avatar.jpg') as ImageProvider,
-                              ),
+                    GestureDetector(
+                      onTap: pickImage,
+                      child: CircleAvatar(
+                        radius: 50,
+                        backgroundImage: _avatarFile != null
+                            ? FileImage(_avatarFile!)
+                            : (userData['avatar'] != null
+                                ? NetworkImage('http://192.168.0.149:8800/v1/img/${userData['avatar']}')
+                                : AssetImage('assets/img/default_avatar.jpg')) as ImageProvider,
+                      ),
+                    ),
                         SizedBox(width: 16),
                         Expanded(
                           child: Column(
@@ -182,7 +325,10 @@ class _ProfilePageState extends State<ProfilePage> {
                                 selectedTabIndex = 0; // Dòng thời gian
                               });
                             },
-                            child: Text('Dòng thời gian'),
+                            child: Text(
+                              'Dòng thời gian',
+                              style: TextStyle(
+                                color: Colors.black)),
                           ),
                         ),
                         Expanded(
@@ -192,7 +338,10 @@ class _ProfilePageState extends State<ProfilePage> {
                                 selectedTabIndex = 1; // Giới thiệu
                               });
                             },
-                            child: Text('Giới thiệu'),
+                            child: Text(
+                              'Giới thiệu',
+                              style: TextStyle(
+                                color: Colors.black)),
                           ),
                         ),
                         Expanded(
@@ -202,7 +351,9 @@ class _ProfilePageState extends State<ProfilePage> {
                                 selectedTabIndex = 2; // Album
                               });
                             },
-                            child: Text('Album'),
+                            child: Text('Album',
+                            style: TextStyle(
+                                color: Colors.black)),
                           ),
                         ),
                         Expanded(
@@ -212,7 +363,9 @@ class _ProfilePageState extends State<ProfilePage> {
                                 selectedTabIndex = 3; // Đang theo dõi
                               });
                             },
-                            child: Text('Đang theo dõi'),
+                            child: Text('Đang theo dõi',
+                            style: TextStyle(
+                                color: Colors.black)),
                           ),
                         ),
                         Expanded(
@@ -222,7 +375,9 @@ class _ProfilePageState extends State<ProfilePage> {
                                 selectedTabIndex = 4; // Viết bài
                               });
                             },
-                            child: Text('Viết bài'),
+                            child: Text('Viết bài',
+                            style: TextStyle(
+                                color: Colors.black)),
                           ),
                         ),
                       ],
@@ -242,21 +397,80 @@ class _ProfilePageState extends State<ProfilePage> {
                 Padding(
                   padding: const EdgeInsets.all(16.0),
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       Text(
                         'THÔNG TIN CÁ NHÂN',
                         style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                       ),
+                      TextField(
+                        controller: _usernameController,
+                        decoration: InputDecoration(labelText: 'User Name'),
+                      ),
+                      SizedBox(height: 10,),
+                      TextField(
+                      controller: _fullNameController,
+                      decoration: InputDecoration(labelText: 'Họ và tên'),
+                      ),
+                      SizedBox(height: 10),
+                      TextField(
+                        controller: _phoneController,
+                        decoration: InputDecoration(labelText: 'Số điện thoại'),
+                      ),
+                      SizedBox(height: 10),
+                      GestureDetector(
+                        onTap: () => _selectDate(context),
+                        child: AbsorbPointer(
+                          child: TextField(
+                            controller: _birthdayController,
+                            decoration: InputDecoration(labelText: 'Ngày tháng năm sinh'),
+                          ),
+                        ),
+                      ),
+                      TextField(
+                        controller: _genderController,
+                        decoration: InputDecoration(labelText: 'Giới tính'),
+                      ),
+                      TextField(
+                        controller: _bioController,
+                        decoration: InputDecoration(labelText: 'Tiểu sử'),
+                      ),
                       SizedBox(height: 20),
-                      buildPersonalInfoRow('Họ và tên', userData['fullname'] ?? 'N/A'),
-                      buildPersonalInfoRow('Email', userData['fullname'] ?? 'N/A'),
-                      buildPersonalInfoRow('Số điện thoại', userData['phone'] ?? 'N/A'),
-                      buildPersonalInfoRow('Ngày sinh', userData['birthday'] ?? 'N/A'),
-                      buildPersonalInfoRow('Giới tính', userData['gender'] ?? 'N/A'),
-                    ],
-                  ),
-                )
+                      ElevatedButton(
+                        onPressed: updateProfile,
+                        style: ElevatedButton.styleFrom(
+                          foregroundColor: Colors.white, backgroundColor: Colors.blue, disabledForegroundColor: Colors.blueGrey.withOpacity(0.38), disabledBackgroundColor: Colors.blueGrey.withOpacity(0.12), 
+                          elevation: 5, 
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(15),
+                          ),
+                          padding: EdgeInsets.symmetric(horizontal: 10, vertical: 15),
+                          textStyle: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text('Update Profile'),
+                          ],
+                        ),
+                      ),
+                        SizedBox(height: 20),
+                        buildPersonalInfoRow('User Name', userData['username'] ?? '...'),
+                        buildPersonalInfoRow('Họ và tên', userData['fullname'] ?? '...'),
+                        buildPersonalInfoRow('Email', userData['email'] ?? '...'),
+                        buildPersonalInfoRow('Số điện thoại', userData['phone'] ?? '...'),
+                        buildPersonalInfoRow(
+                          'Ngày sinh tháng năm sinh',
+                          userData['birthday'] != null ? formatDate(userData['birthday']) : '...',
+                        ),
+                        buildPersonalInfoRow('Giới tính', userData['gender'] ?? '...'),
+                        buildPersonalInfoRow('Tiểu sử', userData['bio'] ?? '...'),
+                      ],
+                    ),
+                  )
               else if (selectedTabIndex == 2)
                 Container(
                   height: 300,
@@ -339,10 +553,20 @@ class _ProfilePageState extends State<ProfilePage> {
                           // Save button action
                         },
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.blue,
-                          minimumSize: Size(double.infinity, 50),
+                          foregroundColor: Colors.white, backgroundColor: Colors.blue, disabledForegroundColor: Colors.blueGrey.withOpacity(0.38), disabledBackgroundColor: Colors.blueGrey.withOpacity(0.12), 
+                          elevation: 5, 
+                          shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(15),
                         ),
-                        child: Text('Save'),
+                          padding: EdgeInsets.symmetric(horizontal: 10, vertical: 15),
+                          minimumSize: Size(double.infinity, 50),
+                          textStyle: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        child: 
+                          Text('Save'),
                       ),
                     ],
                   ),
@@ -354,7 +578,6 @@ class _ProfilePageState extends State<ProfilePage> {
       bottomNavigationBar: HomeBottomBar(currentIndex: 4),
     );
   }
-
 
   // Helper function to build statistic column
   Column buildStatColumn(String number, String label) {
@@ -372,7 +595,6 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  // Helper function to build personal info row
   // Helper function to build personal info row
   Widget buildPersonalInfoRow(String title, String value) {
     return Padding(

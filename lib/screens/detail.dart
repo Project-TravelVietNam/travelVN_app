@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:travelvn/widgets/home_bottom_bar.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:travelvn/widgets/table_calendar.dart';
@@ -14,6 +15,24 @@ class Detail extends StatefulWidget {
 
 class _DetailState extends State<Detail> {
   bool isExpanded = false;
+  bool isFavorite = false;
+  // Phương thức để tải trạng thái yêu thích từ SharedPreferences
+  _loadFavoriteStatus() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    setState(() {
+      isFavorite = prefs.getBool('isFavorite') ?? false;
+    });
+  }
+
+  // Phương thức để lưu trạng thái yêu thích vào SharedPreferences
+  _toggleFavorite() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    setState(() {
+      isFavorite = !isFavorite; // Đổi trạng thái yêu thích
+    });
+    prefs.setBool('isFavorite', isFavorite); // Lưu trạng thái vào SharedPreferences
+  }
+  
 
   @override
   Widget build(BuildContext context) {
@@ -128,9 +147,7 @@ class _DetailState extends State<Detail> {
                     top: 40,
                     right: 20,
                     child: GestureDetector(
-                      onTap: () {
-                        print('Đã nhấn yêu thích');
-                      },
+                      onTap: _toggleFavorite,
                       child: Container(
                         padding: EdgeInsets.all(8),
                         decoration: BoxDecoration(
@@ -145,7 +162,7 @@ class _DetailState extends State<Detail> {
                           ],
                         ),
                         child: Icon(
-                          Icons.favorite_border,
+                          isFavorite ? Icons.favorite : Icons.favorite_border, // Toggle biểu tượng yêu thích
                           color: Colors.red,
                           size: 32,
                         ),
