@@ -8,6 +8,7 @@ import 'package:travelvn/widgets/home_bottom_bar.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:travelvn/screens/auth/sign_in.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -20,6 +21,7 @@ class _ProfilePageState extends State<ProfilePage> {
   final Dio _dio = Dio(); // Sử dụng Dio cho API
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _fullNameController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
   final TextEditingController _birthdayController = TextEditingController();
   final TextEditingController _genderController = TextEditingController();
@@ -76,6 +78,7 @@ class _ProfilePageState extends State<ProfilePage> {
           userData = response.data;
           _usernameController.text = userData['username'] ?? '';
           _fullNameController.text = userData['fullname'] ?? '';
+          _emailController.text = userData['email'] ?? '';
           _phoneController.text = userData['phone'] ?? '';
           _birthdayController.text =
               userData['birthday'] != null ? formatDate(userData['birthday']) : '';
@@ -103,36 +106,36 @@ class _ProfilePageState extends State<ProfilePage> {
       Map<String, dynamic> data = {
         'username': _usernameController.text,
         'fullname': _fullNameController.text,
+        'email': _emailController.text,
         'phone': _phoneController.text,
         'birthday': formatDateToISO(_birthdayController.text),
         'gender': _genderController.text,
         'bio': _bioController.text,
       };
 
+      // Upload avatar if exists
       if (_avatarFile != null) {
         String fileName = _avatarFile!.path.split('/').last;
+
         FormData formData = FormData.fromMap({
-          ...data,
-          'avatar': await MultipartFile.fromFile(_avatarFile!.path, filename: fileName),
+          'image': await MultipartFile.fromFile(_avatarFile!.path, filename: fileName),
         });
 
-        var response = await _dio.post(
-        'http://192.168.0.149:8800/v1/user/update',
-        data: formData,
-        options: Options(headers: {
-          'Cookie': 'access_token=$token',
-          'Content-Type': 'multipart/form-data',
-        }),
-      );
-
-      if (response.statusCode == 200) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Profile updated successfully!')),
+        var uploadResponse = await _dio.post(
+          'http://192.168.0.149:8800/v1/img/upload',
+          data: formData,
+          options: Options(headers: {
+            'Cookie': 'access_token=$token',
+            'Content-Type': 'multipart/form-data',
+          }),
         );
-        fetchUserData();
+
+        if (uploadResponse.statusCode == 200) {
+          data['avatar'] = uploadResponse.data['_id'];
+        }
       }
-    } else {
-      // Xử lý update thông tin cơ bản
+
+      // Update user profile
       var response = await _dio.put(
         'http://192.168.0.149:8800/v1/user/${userData['_id']}',
         data: json.encode(data),
@@ -146,16 +149,15 @@ class _ProfilePageState extends State<ProfilePage> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Profile updated successfully!')),
         );
-        fetchUserData();
+        fetchUserData(); // Refresh user data
       }
+    } catch (error) {
+      print('Error updating profile: $error');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to update profile')),
+      );
     }
-  } catch (error) {
-    print('Error updating profile: $error');
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Failed to update profile')),
-    );
   }
-}
 
 // DatePicker để chọn ngày tháng
   Future<void> _selectDate(BuildContext context) async {
@@ -222,7 +224,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          "Chỉnh sửa",
+                          "Cài đặt",
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
@@ -231,7 +233,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         SizedBox(height: 10),
                         ListTile(
                           leading: Icon(Icons.settings, color: Colors.black),
-                          title: Text('Chỉnh sửa Trang cá nhân'),
+                          title: Text('Chỉnh sửa thông tin giới thiệu'),
                           onTap: () {
                             Navigator.pop(context); // Đóng BottomSheet
                           },
@@ -242,6 +244,21 @@ class _ProfilePageState extends State<ProfilePage> {
                           onTap: () {
                             Navigator.pop(context); // Đóng BottomSheet
                           },
+                        ),
+                        ListTile(
+                          leading: Icon(Icons.logout, color: Colors.black),
+                          title: Text('Đăng xuất'),
+                          onTap: () async {
+                            // Xóa thông tin đăng nhập (ví dụ: xóa token, userData, ...)
+                            final prefs = await SharedPreferences.getInstance();
+                            await prefs.remove('userToken'); // Ví dụ nếu bạn lưu token người dùng
+                            await prefs.remove('userData');  // Nếu lưu dữ liệu người dùng
+                            // Chuyển người dùng về màn hình đăng nhập
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (BuildContext context) => SignIn()),
+                            ); 
+                          }
                         ),
                       ],
                     ),
@@ -411,6 +428,11 @@ class _ProfilePageState extends State<ProfilePage> {
                       TextField(
                       controller: _fullNameController,
                       decoration: InputDecoration(labelText: 'Họ và tên'),
+                      ),
+                      SizedBox(height: 10),
+                      TextField(
+                        controller: _emailController,
+                        decoration: InputDecoration(labelText: 'Email'),
                       ),
                       SizedBox(height: 10),
                       TextField(

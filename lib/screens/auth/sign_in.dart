@@ -69,6 +69,20 @@ class _SignInState extends State<SignIn> {
     await prefs.setString('auth_token', token);
   }
 
+  //Check đăng nhập
+  Future<void> checkLoginStatus(BuildContext context) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? token = prefs.getString('auth_token');
+
+    if (token == null) {
+    // Nếu không có token, chuyển hướng về màn hình đăng nhập
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const SignIn()),
+      );
+    }
+  }
+
   void showError(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(message)),

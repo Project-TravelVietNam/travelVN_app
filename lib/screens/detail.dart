@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:travelvn/widgets/home_bottom_bar.dart';
@@ -16,23 +18,72 @@ class Detail extends StatefulWidget {
 class _DetailState extends State<Detail> {
   bool isExpanded = false;
   bool isFavorite = false;
-  // Phương thức để tải trạng thái yêu thích từ SharedPreferences
-  _loadFavoriteStatus() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
+
+  @override
+  void initState() {
+    super.initState();
+    _loadFavoriteStatus();
+  }
+  Future<void> _loadFavoriteStatus() async {
+  final prefs = await SharedPreferences.getInstance();
+  final favoritesString = prefs.getString('favorite_places_ids');
+  
+  if (favoritesString != null) {
+    final favoriteIds = List<String>.from(json.decode(favoritesString));
     setState(() {
-      isFavorite = prefs.getBool('isFavorite') ?? false;
+      isFavorite = favoriteIds.contains(widget.location['id'].toString());
     });
+  } else {
+    setState(() {
+      isFavorite = false; // Mặc định không yêu thích nếu danh sách rỗng
+    });
+  }
+}
+
+
+  // Thay đổi trạng thái yêu thích
+ Future<void> _toggleFavorite() async {
+  final prefs = await SharedPreferences.getInstance();
+  final favoritesString = prefs.getString('favorite_places_ids');
+  List<String> favoriteIds = [];
+
+  // Nếu danh sách đã tồn tại, giải mã JSON thành danh sách ID
+  if (favoritesString != null) {
+    favoriteIds = List<String>.from(json.decode(favoritesString));
   }
 
-  // Phương thức để lưu trạng thái yêu thích vào SharedPreferences
-  _toggleFavorite() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    setState(() {
-      isFavorite = !isFavorite; // Đổi trạng thái yêu thích
-    });
-    prefs.setBool('isFavorite', isFavorite); // Lưu trạng thái vào SharedPreferences
+  // Kiểm tra xem ID địa điểm đã tồn tại trong danh sách chưa
+  final id = widget.location['id'].toString();
+  if (favoriteIds.contains(id)) {
+    favoriteIds.remove(id); // Nếu đã yêu thích, xóa khỏi danh sách
+  } else {
+    favoriteIds.add(id); // Nếu chưa yêu thích, thêm vào danh sách
   }
-  
+
+  // Lưu danh sách ID vào SharedPreferences
+  await prefs.setString('favorite_places_ids', json.encode(favoriteIds));
+
+  // Lưu thông tin chi tiết địa điểm yêu thích (nếu cần)
+  final String favoritePlacesString = prefs.getString('favorite_places') ?? '[]';
+  List<Map<String, dynamic>> allFavoritePlaces = List<Map<String, dynamic>>.from(json.decode(favoritePlacesString));
+  if (!allFavoritePlaces.any((place) => place['id'].toString() == id)) {
+    allFavoritePlaces.add(widget.location);
+  }
+
+  await prefs.setString('favorite_places', json.encode(allFavoritePlaces));
+
+  // Cập nhật giao diện
+  setState(() {
+    isFavorite = !isFavorite;
+  });
+
+  // Hiển thị thông báo
+  final snackBar = SnackBar(
+    content: Text(isFavorite ? 'Đã thêm vào yêu thích!' : 'Đã xóa khỏi yêu thích!'),
+  );
+  ScaffoldMessenger.of(context).showSnackBar(snackBar);
+}
+
 
   @override
   Widget build(BuildContext context) {
@@ -147,7 +198,7 @@ class _DetailState extends State<Detail> {
                     top: 40,
                     right: 20,
                     child: GestureDetector(
-                      onTap: _toggleFavorite,
+                      onTap: _toggleFavorite,  // Thêm hàm _toggleFavorite vào đây
                       child: Container(
                         padding: EdgeInsets.all(8),
                         decoration: BoxDecoration(
@@ -162,13 +213,14 @@ class _DetailState extends State<Detail> {
                           ],
                         ),
                         child: Icon(
-                          isFavorite ? Icons.favorite : Icons.favorite_border, // Toggle biểu tượng yêu thích
+                          isFavorite ? Icons.favorite : Icons.favorite_border, // Hiển thị icon tùy theo trạng thái yêu thích
                           color: Colors.red,
                           size: 32,
                         ),
                       ),
                     ),
                   ),
+
                 ],
               ),
             ),
