@@ -232,13 +232,6 @@ class _ProfilePageState extends State<ProfilePage> {
                         ),
                         SizedBox(height: 10),
                         ListTile(
-                          leading: Icon(Icons.settings, color: Colors.black),
-                          title: Text('Chỉnh sửa thông tin giới thiệu'),
-                          onTap: () {
-                            Navigator.pop(context); // Đóng BottomSheet
-                          },
-                        ),
-                        ListTile(
                           leading: Icon(Icons.edit_calendar, color: Colors.black),
                           title: Text('Lập kế hoạch'),
                           onTap: () {
@@ -345,7 +338,10 @@ class _ProfilePageState extends State<ProfilePage> {
                             child: Text(
                               'Dòng thời gian',
                               style: TextStyle(
-                                color: Colors.black)),
+                                color: selectedTabIndex == 0 ? Colors.blue : Colors.black,
+                                fontWeight: selectedTabIndex == 0 ? FontWeight.bold : FontWeight.normal,
+                              ),
+                            ),
                           ),
                         ),
                         Expanded(
@@ -358,7 +354,10 @@ class _ProfilePageState extends State<ProfilePage> {
                             child: Text(
                               'Giới thiệu',
                               style: TextStyle(
-                                color: Colors.black)),
+                                color: selectedTabIndex == 1 ? Colors.blue : Colors.black,
+                                fontWeight: selectedTabIndex == 1 ? FontWeight.bold : FontWeight.normal,
+                              ),
+                            ),
                           ),
                         ),
                         Expanded(
@@ -368,9 +367,13 @@ class _ProfilePageState extends State<ProfilePage> {
                                 selectedTabIndex = 2; // Album
                               });
                             },
-                            child: Text('Album',
-                            style: TextStyle(
-                                color: Colors.black)),
+                            child: Text(
+                              'Album',
+                              style: TextStyle(
+                                color: selectedTabIndex == 2 ? Colors.blue : Colors.black,
+                                fontWeight: selectedTabIndex == 2 ? FontWeight.bold : FontWeight.normal,
+                              ),
+                            ),
                           ),
                         ),
                         Expanded(
@@ -380,9 +383,13 @@ class _ProfilePageState extends State<ProfilePage> {
                                 selectedTabIndex = 3; // Đang theo dõi
                               });
                             },
-                            child: Text('Đang theo dõi',
-                            style: TextStyle(
-                                color: Colors.black)),
+                            child: Text(
+                              'Đang theo dõi',
+                              style: TextStyle(
+                                color: selectedTabIndex == 3 ? Colors.blue : Colors.black,
+                                fontWeight: selectedTabIndex == 3 ? FontWeight.bold : FontWeight.normal,
+                              ),
+                            ),
                           ),
                         ),
                         Expanded(
@@ -392,13 +399,18 @@ class _ProfilePageState extends State<ProfilePage> {
                                 selectedTabIndex = 4; // Viết bài
                               });
                             },
-                            child: Text('Viết bài',
-                            style: TextStyle(
-                                color: Colors.black)),
+                            child: Text(
+                              'Viết bài',
+                              style: TextStyle(
+                                color: selectedTabIndex == 4 ? Colors.blue : Colors.black,
+                                fontWeight: selectedTabIndex == 4 ? FontWeight.bold : FontWeight.normal,
+                              ),
+                            ),
                           ),
                         ),
                       ],
                     ),
+
                   ],
                 ),
               ),

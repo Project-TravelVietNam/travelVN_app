@@ -50,7 +50,7 @@ class _FavoritePageState extends State<FavoritePage> {
 
       // Lọc các địa điểm yêu thích dựa trên ID
       final filteredFavorites = loadedFavorites
-          .where((place) => favoriteIds.contains(place['id'].toString()))
+          .where((place) => favoriteIds.contains(place['_id'].toString()))
           .toList();
 
       setState(() {
@@ -72,36 +72,83 @@ class _FavoritePageState extends State<FavoritePage> {
       ),
       bottomNavigationBar: HomeBottomBar(currentIndex: 1),
       body: favoritePlaces.isEmpty
-          ? const Center(
-              child: Text(
-                'Bạn chưa yêu thích địa điểm nào.',
-                style: TextStyle(fontSize: 16, color: Colors.grey),
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.favorite_border, size: 80, color: Colors.grey),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Bạn chưa yêu thích địa điểm nào.',
+                    style: TextStyle(fontSize: 18, color: Colors.grey),
+                  ),
+                ],
               ),
             )
-          : ListView.builder(
-            itemCount: favoritePlaces.length,
-            itemBuilder: (context, index) {
-              final place = favoritePlaces[index];
-              return ListTile(
-                leading: place['image'] != null
-                    ? Image.network(place['image'], width: 50, height: 50, fit: BoxFit.cover)
-                    : const Icon(Icons.location_on),
-                title: Text(
-                  place['title'] ?? 'Tên địa điểm không xác định',
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          : Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: GridView.builder(
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  crossAxisSpacing: 16.0,
+                  mainAxisSpacing: 16.0,
+                  childAspectRatio: 0.8,
                 ),
-                subtitle: Text(place['region']['name']  ?? 'Vị trí không xác định'),
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => Detail(location: place),
+                itemCount: favoritePlaces.length,
+                itemBuilder: (context, index) {
+                  final place = favoritePlaces[index];
+                  final imageUrl = (place['imgLocal'] != null && place['imgLocal'].isNotEmpty)
+                    ? 'http://192.168.0.149:8800/v1/img/${place['imgLocal'][0]}'
+                    : 'https://via.placeholder.com/600';
+                  return GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => Detail(location: place),
+                        ),
+                      );
+                    },
+                    child: Stack(
+                      children: [
+                        Container(
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(20),
+                            image: DecorationImage(
+                              image: NetworkImage(imageUrl),
+                              fit: BoxFit.cover,
+                            ),
+                          ),
+                          child: Align(
+                            alignment: Alignment.bottomCenter,
+                            child: Container(
+                              padding: const EdgeInsets.all(8.0),
+                              decoration: BoxDecoration(
+                                color: Colors.black.withOpacity(0.4),
+                                borderRadius: const BorderRadius.only(
+                                  bottomLeft: Radius.circular(20),
+                                  bottomRight: Radius.circular(20),
+                                ),
+                              ),
+                              child: Text(
+                                place['title'] ?? 'Tên địa điểm không xác định',
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16.0,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        
+                      ],
                     ),
                   );
                 },
-              );
-            },
-          ),
+              ),
+            ),
     );
   }
 }

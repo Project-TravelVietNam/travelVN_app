@@ -138,7 +138,7 @@ class _LocalPageState extends State<LocalPage> {
                       crossAxisCount: 2,
                       crossAxisSpacing: 16.0,
                       mainAxisSpacing: 16.0,
-                      childAspectRatio: 0.8,
+                      childAspectRatio: 0.9,
                     ),
                     itemCount: locations.length,
                     itemBuilder: (context, index) {
@@ -214,34 +214,6 @@ class _LocalPageState extends State<LocalPage> {
                                       fontWeight: FontWeight.bold,
                                       fontSize: 16.0,
                                     ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                            Positioned(
-                              top: 8,
-                              right: 8,
-                              child: GestureDetector(
-                                onTap: () => _toggleFavorite(index),
-                                child: Container(
-                                  padding: EdgeInsets.all(8),
-                                  decoration: BoxDecoration(
-                                    color: Colors.black.withOpacity(0.4),
-                                    shape: BoxShape.circle,
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.black.withOpacity(0.2),
-                                        blurRadius: 10,
-                                        offset: Offset(0, 5),
-                                      ),
-                                    ],
-                                  ),
-                                  child: Icon(
-                                    favoriteLocations.contains(index)
-                                        ? Icons.favorite
-                                        : Icons.favorite_border,
-                                    color: const Color.fromARGB(255, 255, 255, 255),
-                                    size: 24,
                                   ),
                                 ),
                               ),

@@ -24,18 +24,32 @@ class _DetailState extends State<Detail> {
     super.initState();
     _loadFavoriteStatus();
   }
-  Future<void> _loadFavoriteStatus() async {
-  final prefs = await SharedPreferences.getInstance();
-  final favoritesString = prefs.getString('favorite_places_ids');
   
-  if (favoritesString != null) {
-    final favoriteIds = List<String>.from(json.decode(favoritesString));
+ Future<void> _loadFavoriteStatus() async {
+  try {
+    final prefs = await SharedPreferences.getInstance();
+
+    // Lấy danh sách ID yêu thích
+    List<String> favoriteIds = [];
+    final favoritesString = prefs.getString('favorite_places_ids');
+    if (favoritesString != null && favoritesString.isNotEmpty) {
+      favoriteIds = List<String>.from(json.decode(favoritesString));
+    }
+
+    // So sánh ID hiện tại
+    final currentId = widget.location['_id'].toString();
+    final isInFavorites = favoriteIds.contains(currentId);
+
+    // Cập nhật trạng thái yêu thích
     setState(() {
-      isFavorite = favoriteIds.contains(widget.location['id'].toString());
+      isFavorite = isInFavorites;
     });
-  } else {
+
+    print("Trạng thái yêu thích cho ID $currentId: $isFavorite");
+  } catch (e) {
+    print("Lỗi khi tải trạng thái yêu thích: $e");
     setState(() {
-      isFavorite = false; // Mặc định không yêu thích nếu danh sách rỗng
+      isFavorite = false;
     });
   }
 }
@@ -44,6 +58,8 @@ class _DetailState extends State<Detail> {
   // Thay đổi trạng thái yêu thích
  Future<void> _toggleFavorite() async {
   final prefs = await SharedPreferences.getInstance();
+  
+  // Lấy danh sách các ID yêu thích đã lưu trong SharedPreferences
   final favoritesString = prefs.getString('favorite_places_ids');
   List<String> favoriteIds = [];
 
@@ -52,32 +68,42 @@ class _DetailState extends State<Detail> {
     favoriteIds = List<String>.from(json.decode(favoritesString));
   }
 
-  // Kiểm tra xem ID địa điểm đã tồn tại trong danh sách chưa
-  final id = widget.location['id'].toString();
-  if (favoriteIds.contains(id)) {
-    favoriteIds.remove(id); // Nếu đã yêu thích, xóa khỏi danh sách
+  // Lấy ID của địa điểm hiện tại
+  final id = widget.location['_id'].toString();
+
+  // Kiểm tra xem ID địa điểm đã tồn tại trong danh sách yêu thích chưa
+  bool isCurrentlyFavorite = favoriteIds.contains(id);
+
+  // Nếu đã có trong danh sách, xóa khỏi danh sách, ngược lại thêm vào danh sách
+  if (isCurrentlyFavorite) {
+    favoriteIds.remove(id); // Xóa khỏi danh sách yêu thích
   } else {
-    favoriteIds.add(id); // Nếu chưa yêu thích, thêm vào danh sách
+    favoriteIds.add(id); // Thêm vào danh sách yêu thích
   }
 
-  // Lưu danh sách ID vào SharedPreferences
+  // Lưu lại danh sách ID vào SharedPreferences
   await prefs.setString('favorite_places_ids', json.encode(favoriteIds));
 
-  // Lưu thông tin chi tiết địa điểm yêu thích (nếu cần)
+  // Lưu thông tin chi tiết các địa điểm yêu thích vào SharedPreferences
   final String favoritePlacesString = prefs.getString('favorite_places') ?? '[]';
   List<Map<String, dynamic>> allFavoritePlaces = List<Map<String, dynamic>>.from(json.decode(favoritePlacesString));
-  if (!allFavoritePlaces.any((place) => place['id'].toString() == id)) {
-    allFavoritePlaces.add(widget.location);
+
+  // Kiểm tra nếu địa điểm chưa có trong danh sách yêu thích
+  if (isCurrentlyFavorite && !favoriteIds.contains(id)) {
+    allFavoritePlaces.removeWhere((place) => place['_id'].toString() == id); // Xóa khỏi danh sách chi tiết
+  } else if (!isCurrentlyFavorite && !allFavoritePlaces.any((place) => place['_id'].toString() == id)) {
+    allFavoritePlaces.add(widget.location); // Thêm địa điểm vào danh sách chi tiết yêu thích
   }
 
+  // Lưu lại danh sách chi tiết các địa điểm yêu thích vào SharedPreferences
   await prefs.setString('favorite_places', json.encode(allFavoritePlaces));
 
-  // Cập nhật giao diện
+  // Cập nhật giao diện để hiển thị trạng thái yêu thích mới
   setState(() {
-    isFavorite = !isFavorite;
+    isFavorite = !isCurrentlyFavorite; // Cập nhật trạng thái yêu thích
   });
 
-  // Hiển thị thông báo
+  // Hiển thị thông báo cho người dùng
   final snackBar = SnackBar(
     content: Text(isFavorite ? 'Đã thêm vào yêu thích!' : 'Đã xóa khỏi yêu thích!'),
   );
@@ -198,7 +224,10 @@ class _DetailState extends State<Detail> {
                     top: 40,
                     right: 20,
                     child: GestureDetector(
-                      onTap: _toggleFavorite,  // Thêm hàm _toggleFavorite vào đây
+                      onTap: () async {
+                        await _loadFavoriteStatus();
+                        await _toggleFavorite(); // Gọi phương thức _toggleFavorite để thay đổi trạng thái yêu thích
+                      },
                       child: Container(
                         padding: EdgeInsets.all(8),
                         decoration: BoxDecoration(
@@ -213,8 +242,8 @@ class _DetailState extends State<Detail> {
                           ],
                         ),
                         child: Icon(
-                          isFavorite ? Icons.favorite : Icons.favorite_border, // Hiển thị icon tùy theo trạng thái yêu thích
-                          color: Colors.red,
+                          isFavorite ? Icons.favorite : Icons.favorite_border, // Hiển thị icon yêu thích hoặc không yêu thích
+                          color: isFavorite ? Colors.red : Colors.grey, // Màu đỏ nếu yêu thích, màu xám nếu chưa yêu thích
                           size: 32,
                         ),
                       ),
