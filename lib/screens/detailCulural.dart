@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:travelvn/widgets/home_bottom_bar.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:travelvn/widgets/table_calendar.dart';
+import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:http/http.dart' as http;
 
 class DetailCulural extends StatefulWidget {
   final Map<String, dynamic> location;
@@ -14,6 +17,112 @@ class DetailCulural extends StatefulWidget {
 
 class _DetailCuluralState extends State<DetailCulural> {
   bool isExpanded = false;
+  bool isFavorite = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadFavoriteStatus();
+  }
+
+  Future<String?> getToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString('auth_token');
+  }
+
+  Future<void> _loadFavoriteStatus() async {
+    final token = await getToken();
+    if (token == null) return;
+
+    try {
+      final response = await http.get(
+        Uri.parse('http://192.168.0.149:8800/v1/favorite'),
+        headers: {
+          'Cookie': 'access_token=$token',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body)['data'];
+        final culturals = List<Map<String, dynamic>>.from(data['culturals'] ?? []);
+        final currentId = widget.location['_id'].toString();
+        
+        setState(() {
+          isFavorite = culturals.any((item) => item['_id'].toString() == currentId);
+        });
+      }
+    } catch (e) {
+      print('Error loading favorite status: $e');
+    }
+  }
+
+  Future<void> _toggleFavorite() async {
+    final token = await getToken();
+    
+    if (token == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Vui lòng đăng nhập để sử dụng tính năng này')),
+      );
+      return;
+    }
+
+    final id = widget.location['_id'].toString();
+    
+    try {
+      if (isFavorite) {
+        // Xóa yêu thích
+        final response = await http.delete(
+          Uri.parse('http://192.168.0.149:8800/v1/favorite/${id}'),
+          headers: {
+            'Content-Type': 'application/json',
+            'Cookie': 'access_token=$token',
+          },
+        );
+        
+        if (response.statusCode == 200) {
+          setState(() {
+            isFavorite = false;
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Đã xóa khỏi yêu thích!')),
+          );
+          if (Navigator.canPop(context)) {
+            Navigator.pop(context, true);
+          }
+        }
+      } else {
+        // Thêm yêu thích
+        final response = await http.post(
+          Uri.parse('http://192.168.0.149:8800/v1/favorite'),
+          headers: {
+            'Content-Type': 'application/json',
+            'Cookie': 'access_token=$token',
+          },
+          body: json.encode({
+            'type': 'cultural',
+            'itemId': id,
+          }),
+        );
+
+        if (response.statusCode == 200) {
+          setState(() {
+            isFavorite = true;
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Đã thêm vào yêu thích!')),
+          );
+          if (Navigator.canPop(context)) {
+            Navigator.pop(context, true);
+          }
+        }
+      }
+    } catch (e) {
+      print('Error toggling favorite: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Có lỗi xảy ra khi thay đổi trạng thái yêu thích')),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -129,9 +238,7 @@ class _DetailCuluralState extends State<DetailCulural> {
                     top: 40,
                     right: 20,
                     child: GestureDetector(
-                      onTap: () {
-                        print('Đã nhấn yêu thích');
-                      },
+                      onTap: _toggleFavorite,
                       child: Container(
                         padding: EdgeInsets.all(8),
                         decoration: BoxDecoration(
@@ -146,7 +253,7 @@ class _DetailCuluralState extends State<DetailCulural> {
                           ],
                         ),
                         child: Icon(
-                          Icons.favorite_border,
+                          isFavorite ? Icons.favorite : Icons.favorite_border,
                           color: Colors.red,
                           size: 32,
                         ),
@@ -319,7 +426,7 @@ class _DetailCuluralState extends State<DetailCulural> {
         },
         label: Text('Thêm kế hoạch'),
         icon: Icon(Icons.add),
-        backgroundColor: const Color.fromARGB(255, 171, 201, 226), // Đặt màu xanh cho nút
+        backgroundColor: const Color.fromARGB(255, 171, 201, 226), // Đặt màu xanh cho n��t
       ),
       bottomNavigationBar: HomeBottomBar(currentIndex: 3),
     );

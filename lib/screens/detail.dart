@@ -6,6 +6,8 @@ import 'package:travelvn/widgets/home_bottom_bar.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:travelvn/widgets/table_calendar.dart';
 
+import 'package:http/http.dart' as http;
+
 class Detail extends StatefulWidget {
   final Map<String, dynamic> location;
 
@@ -53,62 +55,57 @@ class _DetailState extends State<Detail> {
     });
   }
 }
-
-
-  // Thay đổi trạng thái yêu thích
- Future<void> _toggleFavorite() async {
+Future<String?> getToken() async {
   final prefs = await SharedPreferences.getInstance();
-  
-  // Lấy danh sách các ID yêu thích đã lưu trong SharedPreferences
-  final favoritesString = prefs.getString('favorite_places_ids');
-  List<String> favoriteIds = [];
-
-  // Nếu danh sách đã tồn tại, giải mã JSON thành danh sách ID
-  if (favoritesString != null) {
-    favoriteIds = List<String>.from(json.decode(favoritesString));
-  }
-
-  // Lấy ID của địa điểm hiện tại
-  final id = widget.location['_id'].toString();
-
-  // Kiểm tra xem ID địa điểm đã tồn tại trong danh sách yêu thích chưa
-  bool isCurrentlyFavorite = favoriteIds.contains(id);
-
-  // Nếu đã có trong danh sách, xóa khỏi danh sách, ngược lại thêm vào danh sách
-  if (isCurrentlyFavorite) {
-    favoriteIds.remove(id); // Xóa khỏi danh sách yêu thích
-  } else {
-    favoriteIds.add(id); // Thêm vào danh sách yêu thích
-  }
-
-  // Lưu lại danh sách ID vào SharedPreferences
-  await prefs.setString('favorite_places_ids', json.encode(favoriteIds));
-
-  // Lưu thông tin chi tiết các địa điểm yêu thích vào SharedPreferences
-  final String favoritePlacesString = prefs.getString('favorite_places') ?? '[]';
-  List<Map<String, dynamic>> allFavoritePlaces = List<Map<String, dynamic>>.from(json.decode(favoritePlacesString));
-
-  // Kiểm tra nếu địa điểm chưa có trong danh sách yêu thích
-  if (isCurrentlyFavorite && !favoriteIds.contains(id)) {
-    allFavoritePlaces.removeWhere((place) => place['_id'].toString() == id); // Xóa khỏi danh sách chi tiết
-  } else if (!isCurrentlyFavorite && !allFavoritePlaces.any((place) => place['_id'].toString() == id)) {
-    allFavoritePlaces.add(widget.location); // Thêm địa điểm vào danh sách chi tiết yêu thích
-  }
-
-  // Lưu lại danh sách chi tiết các địa điểm yêu thích vào SharedPreferences
-  await prefs.setString('favorite_places', json.encode(allFavoritePlaces));
-
-  // Cập nhật giao diện để hiển thị trạng thái yêu thích mới
-  setState(() {
-    isFavorite = !isCurrentlyFavorite; // Cập nhật trạng thái yêu thích
-  });
-
-  // Hiển thị thông báo cho người dùng
-  final snackBar = SnackBar(
-    content: Text(isFavorite ? 'Đã thêm vào yêu thích!' : 'Đã xóa khỏi yêu thích!'),
-  );
-  ScaffoldMessenger.of(context).showSnackBar(snackBar);
+  return prefs.getString('auth_token');
 }
+
+   Future<void> _toggleFavorite() async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = await getToken();
+    
+    if (token == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Vui lòng đăng nhập để sử dụng tính năng này')),
+      );
+      return;
+    }
+
+    final id = widget.location['_id'].toString();
+
+    try {
+      final response = await http.post(
+        Uri.parse('http://192.168.0.149:8800/v1/favorite'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Cookie': 'access_token=$token',
+        },
+        body: json.encode({
+          'type': 'local',
+          'itemId': id,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        setState(() {
+          isFavorite = !isFavorite;
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(isFavorite ? 'Đã thêm vào yêu thích!' : 'Đã xóa khỏi yêu thích!'),
+          ),
+        );
+      } else {
+        throw Exception('Failed to toggle favorite');
+      }
+    } catch (e) {
+      print('Error toggling favorite: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Có lỗi xảy ra')),
+      );
+    }
+  }
 
 
   @override

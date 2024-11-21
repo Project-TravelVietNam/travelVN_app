@@ -6,6 +6,7 @@ import 'package:travelvn/screens/detailHistory.dart';
 import 'package:travelvn/widgets/home_app_bar.dart';
 import 'package:travelvn/widgets/home_bottom_bar.dart';
 import 'detail.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class LocalPage extends StatefulWidget {
   @override
@@ -57,15 +58,53 @@ class _LocalPageState extends State<LocalPage> {
       });
     });
   }
+Future<String?> getToken() async {
+  final prefs = await SharedPreferences.getInstance();
+  return prefs.getString('auth_token');
+}
+  Future<void> _toggleFavorite(int index) async {
+    final token = await getToken();
+    
+    if (token == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Vui lòng đăng nhập để sử dụng tính năng này')),
+      );
+      return;
+    }
 
-  void _toggleFavorite(int index) {
-    setState(() {
-      if (favoriteLocations.contains(index)) {
-        favoriteLocations.remove(index);
+    try {
+      final id = locations[index]['_id'].toString();
+      
+      final response = await http.post(
+        Uri.parse('http://192.168.0.149:8800/v1/favorite'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Cookie': 'access_token=$token',
+        },
+        body: json.encode({
+          'type': selectedCategory == 'Lịch sử' ? 'history' : 
+                  selectedCategory == 'Văn hóa Ẩm thực' ? 'cultural' : 'local',
+          'itemId': id,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        setState(() {
+          if (favoriteLocations.contains(index)) {
+            favoriteLocations.remove(index);
+          } else {
+            favoriteLocations.add(index);
+          }
+        });
       } else {
-        favoriteLocations.add(index);
+        throw Exception('Failed to toggle favorite');
       }
-    });
+    } catch (e) {
+      print('Error toggling favorite: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Có lỗi xảy ra')),
+      );
+    }
   }
 
   @override

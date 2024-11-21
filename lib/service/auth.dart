@@ -3,7 +3,7 @@ import 'package:http/http.dart' as http;
 
 class AuthService {
   final String baseUrl = 'http://192.168.0.149:8800'; // URL của server Node.js của bạn
-
+  // final String baseUrl = 'http://10.50.3.235.149:8800';
   // Đăng ký người dùng
   Future<String> addUser({
     required String username,

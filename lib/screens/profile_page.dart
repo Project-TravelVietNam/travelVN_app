@@ -244,8 +244,8 @@ class _ProfilePageState extends State<ProfilePage> {
                           onTap: () async {
                             // Xóa thông tin đăng nhập (ví dụ: xóa token, userData, ...)
                             final prefs = await SharedPreferences.getInstance();
-                            await prefs.remove('userToken'); // Ví dụ nếu bạn lưu token người dùng
-                            await prefs.remove('userData');  // Nếu lưu dữ liệu người dùng
+                            await prefs.clear(); // Ví dụ nếu bạn lưu token người dùng
+                            // await prefs.remove('userData');  // Nếu lưu dữ liệu người dùng
                             // Chuyển người dùng về màn hình đăng nhập
                             Navigator.push(
                               context,

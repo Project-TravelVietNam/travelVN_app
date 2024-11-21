@@ -9,6 +9,7 @@ import 'package:travelvn/widgets/63S.dart';
 import 'package:travelvn/widgets/home_app_bar.dart';
 import 'package:travelvn/widgets/home_bottom_bar.dart';
 import 'package:travelvn/widgets/table_calendar.dart';
+import 'package:travelvn/screens/map.dart';
 
 import 'package:http/http.dart' as http;
 
@@ -150,6 +151,7 @@ class _HomePageState extends State<HomePage> {
                                   return InkWell(
                                     onTap: () {
                                       // Navigate to Detail screen with the location data
+                                      print(location);
                                       Navigator.push(
                                         context,
                                         MaterialPageRoute(
@@ -480,13 +482,27 @@ class _HomePageState extends State<HomePage> {
                 SizedBox(height: 20),
                 Container(
                   height: 300,
-                  // child: GoogleMap(
-                  //   onMapCreated: _onMapCreated,
-                  //   initialCameraPosition: CameraPosition(
-                  //     target: _center,
-                  //     zoom: 12.0,
-                  //   ),
-                  // ),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(15),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black26,
+                        blurRadius: 4,
+                        offset: Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  clipBehavior: Clip.antiAlias,
+                  child: InkWell(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const MapScreen()),
+                      );
+                    },
+                    child: const MapScreen(),
+                  ),
                 ),
               ],
             ),

@@ -5,6 +5,7 @@ import 'package:travelvn/widgets/home_app_bar.dart';
 import 'package:travelvn/widgets/home_bottom_bar.dart';
 import 'package:travelvn/screens/details_Location.dart';
 import 'package:travelvn/screens/detail.dart';
+import 'package:http/http.dart' as http;
 
 class FavoritePage extends StatefulWidget {
   const FavoritePage({super.key});
@@ -15,6 +16,8 @@ class FavoritePage extends StatefulWidget {
 
 class _FavoritePageState extends State<FavoritePage> {
   List<Map<String, dynamic>> favoritePlaces = [];
+  List<Map<String, dynamic>> favoriteHistories = [];
+  List<Map<String, dynamic>> favoriteCulturals = [];
 
   @override
   void initState() {
@@ -22,56 +25,61 @@ class _FavoritePageState extends State<FavoritePage> {
     _loadFavorites();
   }
 
-  // Hàm tải danh sách yêu thích từ SharedPreferences sử dụng List<Map<String, dynamic>>
- Future<void> _loadFavorites() async {
-  final prefs = await SharedPreferences.getInstance();
-  
-  // Lấy danh sách ID yêu thích
-  final favoritesIdsString = prefs.getString('favorite_places_ids');
-  List<String> favoriteIds = [];
-
-  if (favoritesIdsString != null) {
-    favoriteIds = List<String>.from(json.decode(favoritesIdsString));
+  Future<String?> getToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString('auth_token');
   }
 
-  // Lấy danh sách địa điểm yêu thích
-  final favoritesString = prefs.getString('favorite_places');
-  List<Map<String, dynamic>> loadedFavorites = [];
+  Future<void> _loadFavorites() async {
+    final token = await getToken();
+    
+    if (token == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Vui lòng đăng nhập để xem danh sách yêu thích')),
+      );
+      return;
+    }
 
-  if (favoritesString != null) {
     try {
-      final List<dynamic> decodedList = json.decode(favoritesString);
+      final response = await http.get(
+        Uri.parse('http://192.168.0.149:8800/v1/favorite'),
+        headers: {
+          'Cookie': 'access_token=$token',
+        },
+      );
 
-      if (decodedList is List) {
-        loadedFavorites = decodedList
-            .map((item) => item is Map<String, dynamic> ? item : Map<String, dynamic>.from(item))
-            .toList();
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> responseData = json.decode(response.body);
+        final data = responseData['data'];
+        setState(() {
+          favoritePlaces = List<Map<String, dynamic>>.from(data['locals'] ?? []);
+          favoriteHistories = List<Map<String, dynamic>>.from(data['histories'] ?? []);
+          favoriteCulturals = List<Map<String, dynamic>>.from(data['culturals'] ?? []);
+        });
+      } else {
+        throw Exception('Failed to load favorites');
       }
-
-      // Lọc các địa điểm yêu thích dựa trên ID
-      final filteredFavorites = loadedFavorites
-          .where((place) => favoriteIds.contains(place['_id'].toString()))
-          .toList();
-
-      setState(() {
-        favoritePlaces = filteredFavorites;
-      });
     } catch (e) {
-      print("Lỗi khi giải mã JSON: $e");
+      print('Error loading favorites: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Có lỗi khi tải danh sách yêu thích')),
+      );
     }
   }
-}
-
 
   @override
   Widget build(BuildContext context) {
+    final bool hasNoFavorites = favoritePlaces.isEmpty && 
+                               favoriteHistories.isEmpty && 
+                               favoriteCulturals.isEmpty;
+
     return Scaffold(
       appBar: const PreferredSize(
         preferredSize: Size.fromHeight(90.0),
         child: HomeAppBar(),
       ),
       bottomNavigationBar: HomeBottomBar(currentIndex: 1),
-      body: favoritePlaces.isEmpty
+      body: hasNoFavorites
           ? Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -85,70 +93,114 @@ class _FavoritePageState extends State<FavoritePage> {
                 ],
               ),
             )
-          : Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: GridView.builder(
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  crossAxisSpacing: 16.0,
-                  mainAxisSpacing: 16.0,
-                  childAspectRatio: 0.8,
+          : SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (favoritePlaces.isNotEmpty) ...[
+                      Text(
+                        'Địa điểm yêu thích',
+                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                      ),
+                      SizedBox(height: 10),
+                      _buildGrid(favoritePlaces),
+                      SizedBox(height: 20),
+                    ],
+                    if (favoriteHistories.isNotEmpty) ...[
+                      Text(
+                        'Di tích lịch sử yêu thích',
+                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                      ),
+                      SizedBox(height: 10),
+                      _buildGrid(favoriteHistories),
+                      SizedBox(height: 20),
+                    ],
+                    if (favoriteCulturals.isNotEmpty) ...[
+                      Text(
+                        'Văn hóa ẩm thực yêu thích',
+                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                      ),
+                      SizedBox(height: 10),
+                      _buildGrid(favoriteCulturals),
+                    ],
+                  ],
                 ),
-                itemCount: favoritePlaces.length,
-                itemBuilder: (context, index) {
-                  final place = favoritePlaces[index];
-                  final imageUrl = (place['imgLocal'] != null && place['imgLocal'].isNotEmpty)
-                    ? 'http://192.168.0.149:8800/v1/img/${place['imgLocal'][0]}'
-                    : 'https://via.placeholder.com/600';
-                  return GestureDetector(
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => Detail(location: place),
-                        ),
-                      );
-                    },
-                    child: Stack(
-                      children: [
-                        Container(
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(20),
-                            image: DecorationImage(
-                              image: NetworkImage(imageUrl),
-                              fit: BoxFit.cover,
-                            ),
-                          ),
-                          child: Align(
-                            alignment: Alignment.bottomCenter,
-                            child: Container(
-                              padding: const EdgeInsets.all(8.0),
-                              decoration: BoxDecoration(
-                                color: Colors.black.withOpacity(0.4),
-                                borderRadius: const BorderRadius.only(
-                                  bottomLeft: Radius.circular(20),
-                                  bottomRight: Radius.circular(20),
-                                ),
-                              ),
-                              child: Text(
-                                place['title'] ?? 'Tên địa điểm không xác định',
-                                textAlign: TextAlign.center,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16.0,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                        
-                      ],
-                    ),
-                  );
-                },
               ),
             ),
+    );
+  }
+
+  Widget _buildGrid(List<Map<String, dynamic>> items) {
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: NeverScrollableScrollPhysics(),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        crossAxisSpacing: 16.0,
+        mainAxisSpacing: 16.0,
+        childAspectRatio: 0.8,
+      ),
+      itemCount: items.length,
+      itemBuilder: (context, index) {
+        final place = items[index];
+        final imageUrl = (place['imgLocal'] != null && place['imgLocal'].isNotEmpty)
+          ? 'http://192.168.0.149:8800/v1/img/${place['imgLocal'][0]}'
+          : (place['imgHistory'] != null && place['imgHistory'].isNotEmpty)
+              ? 'http://192.168.0.149:8800/v1/img/${place['imgHistory'][0]}'
+              : 'https://via.placeholder.com/600';
+        
+        return GestureDetector(
+          onTap: () async {
+            final needsRefresh = await Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => Detail(location: place),
+              ),
+            );
+            
+            if (needsRefresh == true) {
+              _loadFavorites();
+            }
+          },
+          child: Stack(
+            children: [
+              Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(20),
+                  image: DecorationImage(
+                    image: NetworkImage(imageUrl),
+                    fit: BoxFit.cover,
+                  ),
+                ),
+                child: Align(
+                  alignment: Alignment.bottomCenter,
+                  child: Container(
+                    padding: const EdgeInsets.all(8.0),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.4),
+                      borderRadius: const BorderRadius.only(
+                        bottomLeft: Radius.circular(20),
+                        bottomRight: Radius.circular(20),
+                      ),
+                    ),
+                    child: Text(
+                      place['title'] ?? 'Tên địa điểm không xác định',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16.0,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }
