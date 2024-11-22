@@ -23,7 +23,9 @@ class _HomeAppBarState extends State<HomeAppBar> {
     try {
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
-        setState(() => _currentAddress = "Vui lòng bật vị trí");
+        if (mounted) {
+          setState(() => _currentAddress = "Vui lòng bật vị trí");
+        }
         return;
       }
 
@@ -31,7 +33,9 @@ class _HomeAppBarState extends State<HomeAppBar> {
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
         if (permission == LocationPermission.denied) {
-          setState(() => _currentAddress = "Quyền truy cập bị từ chối");
+          if (mounted) {
+            setState(() => _currentAddress = "Quyền truy cập bị từ chối");
+          }
           return;
         }
       }
@@ -42,14 +46,16 @@ class _HomeAppBarState extends State<HomeAppBar> {
         position.longitude,
       );
 
-      if (placemarks.isNotEmpty) {
+      if (mounted && placemarks.isNotEmpty) {
         final place = placemarks.first;
         setState(() {
           _currentAddress = "${place.locality ?? place.subAdministrativeArea}, ${place.country}";
         });
       }
     } catch (e) {
-      setState(() => _currentAddress = "Không thể xác định vị trí");
+      if (mounted) {
+        setState(() => _currentAddress = "Không thể xác định vị trí");
+      }
     }
   }
 
