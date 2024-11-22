@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:travelvn/screens/map.dart';
 import 'package:travelvn/widgets/home_bottom_bar.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:travelvn/widgets/table_calendar.dart';
@@ -344,9 +345,25 @@ class _DetailState extends State<Detail> {
                       Icon(Icons.map, color: Colors.red, size: 18),
                       SizedBox(width: 8),
                       Expanded(
-                        child: Text(
-                          localData['address'] ?? 'Chưa có địa chỉ',
-                          style: TextStyle(fontSize: 14, color: Colors.black87),
+                        child: GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => MapScreen(
+                                  searchAddress: localData['address'] ?? 'Chưa có địa chỉ',
+                                ),
+                              ),
+                            );
+                          },
+                          child: Text(
+                            localData['address'] ?? 'Chưa có địa chỉ',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.blue, // Thêm màu để chỉ ra có thể nhấn
+                              decoration: TextDecoration.underline, // Thêm gạch chân
+                            ),
+                          ),
                         ),
                       ),
                     ],

@@ -5,6 +5,7 @@ import 'package:travelvn/widgets/table_calendar.dart';
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
+import 'package:travelvn/screens/map.dart';
 
 class DetailCulural extends StatefulWidget {
   final Map<String, dynamic> location;
@@ -327,9 +328,25 @@ class _DetailCuluralState extends State<DetailCulural> {
                       Icon(Icons.map, color: Colors.red, size: 18),
                       SizedBox(width: 8),
                       Expanded(
-                        child: Text(
-                          localData['address'] ?? 'Chưa có địa chỉ',
-                          style: TextStyle(fontSize: 14, color: Colors.black87),
+                        child: GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => MapScreen(
+                                  searchAddress: localData['address'] ?? 'Chưa có địa chỉ',
+                                ),
+                              ),
+                            );
+                          },
+                          child: Text(
+                            localData['address'] ?? 'Chưa có địa chỉ',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.blue,
+                              decoration: TextDecoration.underline,
+                            ),
+                          ),
                         ),
                       ),
                     ],

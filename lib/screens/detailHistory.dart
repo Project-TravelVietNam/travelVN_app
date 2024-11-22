@@ -5,6 +5,7 @@ import 'package:travelvn/widgets/table_calendar.dart';
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
+import 'package:travelvn/screens/map.dart';
 
 class DetailHistory extends StatefulWidget {
   final Map<String, dynamic> location;
@@ -327,9 +328,25 @@ class _DetailHistoryState extends State<DetailHistory> {
                       Icon(Icons.map, color: Colors.red, size: 18),
                       SizedBox(width: 8),
                       Expanded(
-                        child: Text(
-                          localHistory['address'] ?? 'Chưa có địa chỉ',
-                          style: TextStyle(fontSize: 14, color: Colors.black87),
+                        child: GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => MapScreen(
+                                  searchAddress: localHistory['address'] ?? 'Chưa có địa chỉ',
+                                ),
+                              ),
+                            );
+                          },
+                          child: Text(
+                            localHistory['address'] ?? 'Chưa có địa chỉ',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.blue,
+                              decoration: TextDecoration.underline,
+                            ),
+                          ),
                         ),
                       ),
                     ],
@@ -393,7 +410,7 @@ class _DetailHistoryState extends State<DetailHistory> {
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
             ),
-            buildCommentSection('Khoai Lang Thang', '3 giờ 15 phút trước', 'assets/images/user1.png', 4, 'Ở đây có rất nhiều địa điểm để khám phá du lịch.'),
+            buildCommentSection('Khoai Lang Thang', '3 giờ 15 ph��t trước', 'assets/images/user1.png', 4, 'Ở đây có rất nhiều địa điểm để khám phá du lịch.'),
             buildCommentSection('Kang Ho', '4 ngày trước', 'assets/images/user2.png', 5, 'I was very happy to be exposed to the culture here.'),
             Padding(
               padding: const EdgeInsets.all(16.0),

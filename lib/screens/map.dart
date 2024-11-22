@@ -6,9 +6,17 @@ import 'package:latlong2/latlong.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import '../widgets/map_markers.dart';
+import '../widgets/search_bar_map.dart';
+import '../widgets/directions_sheet.dart';
 
 class MapScreen extends StatefulWidget {
-  const MapScreen({super.key});
+  final String? searchAddress;
+  
+  const MapScreen({
+    super.key, 
+    this.searchAddress,
+  });
 
   @override
   _MapScreenState createState() => _MapScreenState();
@@ -19,14 +27,28 @@ class _MapScreenState extends State<MapScreen> {
   LatLng _currentLocation = const LatLng(16.4637, 107.5909);
   bool _isLoading = true;
   final TextEditingController _searchController = TextEditingController();
+  final TextEditingController _startSearchController = TextEditingController();
+  final TextEditingController _endSearchController = TextEditingController();
+  LatLng? _startLocation;
   LatLng? _destinationLocation;
   List<LatLng> _routePoints = [];
   bool _showRoute = false;
+  List<Map<String, dynamic>> _routeSteps = [];
+  double _totalDistance = 0;
+  String _totalDuration = '';
 
   @override
   void initState() {
     super.initState();
     _getCurrentLocation();
+    
+    // Nếu có địa chỉ được truyền vào, tự động điền vào ô tìm kiếm và tìm kiếm
+    if (widget.searchAddress != null && widget.searchAddress != 'Chưa có địa chỉ') {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _endSearchController.text = widget.searchAddress!;
+        _searchEndLocation(widget.searchAddress!);
+      });
+    }
   }
 
   Future<void> _getCurrentLocation() async {
@@ -65,7 +87,7 @@ class _MapScreenState extends State<MapScreen> {
     }
   }
 
-  Future<void> _searchLocation(String address) async {
+  Future<void> _searchEndLocation(String address) async {
     try {
       setState(() => _isLoading = true);
       List<Location> locations = await locationFromAddress(address);
@@ -79,7 +101,39 @@ class _MapScreenState extends State<MapScreen> {
           _routePoints.clear();
         });
         _mapController.move(_destinationLocation!, 15.0);
-        await _getRoute();
+        if (_startLocation != null) {
+          await _getRoute();
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Không tìm thấy địa điểm')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _searchStartLocation(String address) async {
+    print('Searching start location: $address');
+    try {
+      setState(() => _isLoading = true);
+      List<Location> locations = await locationFromAddress(address);
+      if (locations.isNotEmpty && mounted) {
+        setState(() {
+          _startLocation = LatLng(
+            locations.first.latitude,
+            locations.first.longitude,
+          );
+          _showRoute = false;
+          _routePoints.clear();
+        });
+        _mapController.move(_startLocation!, 15.0);
+        if (_destinationLocation != null) {
+          await _getRoute();
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -93,32 +147,49 @@ class _MapScreenState extends State<MapScreen> {
   }
 
   Future<void> _getRoute() async {
-    if (_destinationLocation == null) return;
+    if (_startLocation == null || _destinationLocation == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Vui lòng nhập cả điểm bắt đầu và điểm đến')),
+      );
+      return;
+    }
 
     try {
       setState(() => _isLoading = true);
 
-      // Sử dụng OSRM API để lấy chỉ đường
       final response = await http.get(Uri.parse(
         'http://router.project-osrm.org/route/v1/driving/'
-        '${_currentLocation.longitude},${_currentLocation.latitude};'
+        '${_startLocation!.longitude},${_startLocation!.latitude};'
         '${_destinationLocation!.longitude},${_destinationLocation!.latitude}'
-        '?overview=full&geometries=geojson'
+        '?overview=full&geometries=geojson&steps=true'
       ));
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        final List<dynamic> coordinates = 
-          data['routes'][0]['geometry']['coordinates'];
+        final route = data['routes'][0];
+        final List<dynamic> coordinates = route['geometry']['coordinates'];
+        final List<dynamic> steps = route['legs'][0]['steps'];
+        
+        final distance = route['distance'] / 1000;
+        final duration = route['duration'] / 60;
 
         setState(() {
           _routePoints = coordinates
               .map((coord) => LatLng(coord[1].toDouble(), coord[0].toDouble()))
               .toList();
           _showRoute = true;
+          _totalDistance = distance;
+          _totalDuration = '${duration.round()} phút';
+          
+          _routeSteps = steps.map<Map<String, dynamic>>((step) {
+            return {
+              'instruction': step['maneuver']['type'],
+              'distance': (step['distance'] / 1000).toStringAsFixed(1),
+              'duration': (step['duration'] / 60).round(),
+            };
+          }).toList();
         });
 
-        // Điều chỉnh map để hiển thị toàn bộ tuyến đường
         final bounds = LatLngBounds.fromPoints(_routePoints);
         _mapController.fitCamera(
           CameraFit.bounds(
@@ -148,6 +219,18 @@ class _MapScreenState extends State<MapScreen> {
     }
   }
 
+  void _showDirectionsSheet() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) => DirectionsSheet(
+        totalDistance: _totalDistance,
+        totalDuration: _totalDuration,
+        routeSteps: _routeSteps,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -166,156 +249,133 @@ class _MapScreenState extends State<MapScreen> {
       ),
       body: Stack(
         children: [
-          FlutterMap(
-            mapController: _mapController,
-            options: MapOptions(
-              initialCenter: const LatLng(10.7769, 106.7009),
-              initialZoom: 13.0,
-            ),
-            children: [
-              TileLayer(
-                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                userAgentPackageName: 'com.example.app',
-              ),
-              // Hiển thị đường đi
-              if (_showRoute && _routePoints.isNotEmpty)
-                PolylineLayer(
-                  polylines: [
-                    Polyline(
-                      points: _routePoints,
-                      color: Colors.blue,
-                      strokeWidth: 3.0,
-                    ),
-                  ],
-                ),
-              MarkerLayer(
-                markers: [
-                  // Marker vị trí hiện tại
-                  Marker(
-                    point: _currentLocation,
-                    width: 80,
-                    height: 80,
-                    child: Column(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(4),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(20),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.25),
-                                blurRadius: 4,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          child: const Text(
-                            'Vị trí của bạn',
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                        const Icon(
-                          Icons.location_pin,
-                          color: Colors.red,
-                          size: 40,
-                        ),
-                      ],
-                    ),
-                  ),
-                  // Marker điểm đến
-                  if (_destinationLocation != null)
-                    Marker(
-                      point: _destinationLocation!,
-                      width: 80,
-                      height: 80,
-                      child: Column(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(4),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(20),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.25),
-                                  blurRadius: 4,
-                                  offset: const Offset(0, 2),
-                                ),
-                              ],
-                            ),
-                            child: const Text(
-                              'Điểm đến',
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                          const Icon(
-                            Icons.place,
-                            color: Colors.blue,
-                            size: 40,
-                          ),
-                        ],
-                      ),
-                    ),
-                ],
-              ),
-            ],
-          ),
-          // Thanh tìm kiếm
-          Positioned(
-            top: 16,
-            left: 16,
-            right: 16,
-            child: Card(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        controller: _searchController,
-                        decoration: const InputDecoration(
-                          hintText: 'Tìm kiếm địa điểm...',
-                          border: InputBorder.none,
-                          icon: Icon(Icons.search),
-                        ),
-                        onSubmitted: (value) => _searchLocation(value),
-                      ),
-                    ),
-                    if (_searchController.text.isNotEmpty)
-                      IconButton(
-                        icon: const Icon(Icons.clear),
-                        onPressed: () {
-                          _searchController.clear();
-                          setState(() {
-                            _destinationLocation = null;
-                            _showRoute = false;
-                            _routePoints.clear();
-                          });
-                        },
-                      ),
-                  ],
-                ),
-              ),
-            ),
-          ),
+          _buildMap(),
+          _buildSearchBars(),
           if (_isLoading)
             const Center(child: CircularProgressIndicator()),
         ],
       ),
-      floatingActionButton: _destinationLocation != null
-          ? FloatingActionButton.extended(
-              onPressed: _getRoute,
-              label: const Text('Chỉ đường'),
-              icon: const Icon(Icons.directions),
-            )
-          : null,
+      floatingActionButton: _buildFloatingActionButtons(),
+    );
+  }
+
+  Widget _buildMap() {
+    return FlutterMap(
+      mapController: _mapController,
+      options: MapOptions(
+        initialCenter: const LatLng(10.7769, 106.7009),
+        initialZoom: 13.0,
+      ),
+      children: [
+        TileLayer(
+          urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+          userAgentPackageName: 'com.example.app',
+        ),
+        if (_showRoute && _routePoints.isNotEmpty)
+          PolylineLayer(
+            polylines: [
+              Polyline(
+                points: _routePoints,
+                color: Colors.blue,
+                strokeWidth: 3.0,
+              ),
+            ],
+          ),
+        MarkerLayer(
+          markers: [
+            LocationMarker(
+              point: _currentLocation,
+              label: 'Vị trí của bạn',
+              markerColor: Colors.red,
+              icon: Icons.location_pin,
+            ),
+            if (_startLocation != null)
+              LocationMarker(
+                point: _startLocation!,
+                label: 'Điểm bắt đầu',
+                markerColor: Colors.red,
+                icon: Icons.location_pin,
+              ),
+            if (_destinationLocation != null)
+              LocationMarker(
+                point: _destinationLocation!,
+                label: 'Điểm đến',
+                markerColor: Colors.blue,
+                icon: Icons.place,
+              ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSearchBars() {
+    return Positioned(
+      top: 16,
+      left: 16,
+      right: 16,
+      child: Column(
+        children: [
+          CustomSearchBarMap(
+            controller: _startSearchController,
+            hintText: 'Điểm bắt đầu...',
+            icon: Icons.my_location,
+            onSubmitted: _searchStartLocation,
+            onClear: () {
+              _startSearchController.clear();
+              setState(() {
+                _startLocation = null;
+                _showRoute = false;
+                _routePoints.clear();
+              });
+            },
+          ),
+          const SizedBox(height: 8),
+          CustomSearchBarMap(
+            controller: _endSearchController,
+            hintText: 'Điểm đến...',
+            icon: Icons.place,
+            onSubmitted: _searchEndLocation,
+            onClear: () {
+              _endSearchController.clear();
+              setState(() {
+                _destinationLocation = null;
+                _showRoute = false;
+                _routePoints.clear();
+              });
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFloatingActionButtons() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.end,
+      children: [
+        FloatingActionButton.extended(
+          onPressed: (_startLocation == null || _destinationLocation == null) 
+            ? () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Vui lòng nhập cả điểm bắt đầu và điểm đến')),
+                );
+              }
+            : _getRoute,
+          label: const Text('Tìm đường'),
+          icon: const Icon(Icons.directions),
+          heroTag: 'findRoute',
+        ),
+        if (_showRoute)
+          ...[
+            const SizedBox(width: 8),
+            FloatingActionButton(
+              onPressed: _showDirectionsSheet,
+              child: const Icon(Icons.list),
+              heroTag: 'showDirections',
+            ),
+          ],
+      ],
     );
   }
 }

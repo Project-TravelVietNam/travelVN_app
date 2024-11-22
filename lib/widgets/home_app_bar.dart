@@ -1,8 +1,57 @@
 import 'package:flutter/material.dart';
 import 'package:travelvn/widgets/search_bar.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:geocoding/geocoding.dart';
 
-class HomeAppBar extends StatelessWidget {
+class HomeAppBar extends StatefulWidget {
   const HomeAppBar({super.key});
+
+  @override
+  State<HomeAppBar> createState() => _HomeAppBarState();
+}
+
+class _HomeAppBarState extends State<HomeAppBar> {
+  String _currentAddress = "Đang xác định...";
+  
+  @override
+  void initState() {
+    super.initState();
+    _getCurrentLocation();
+  }
+
+  Future<void> _getCurrentLocation() async {
+    try {
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        setState(() => _currentAddress = "Vui lòng bật vị trí");
+        return;
+      }
+
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) {
+          setState(() => _currentAddress = "Quyền truy cập bị từ chối");
+          return;
+        }
+      }
+
+      final position = await Geolocator.getCurrentPosition();
+      final placemarks = await placemarkFromCoordinates(
+        position.latitude,
+        position.longitude,
+      );
+
+      if (placemarks.isNotEmpty) {
+        final place = placemarks.first;
+        setState(() {
+          _currentAddress = "${place.locality ?? place.subAdministrativeArea}, ${place.country}";
+        });
+      }
+    } catch (e) {
+      setState(() => _currentAddress = "Không thể xác định vị trí");
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -74,10 +123,7 @@ class HomeAppBar extends StatelessWidget {
   // Widget cho phần location
   Widget _buildLocation() {
     return GestureDetector(
-      onTap: () {
-        // Mở màn hình chọn địa điểm (Có thể sử dụng một trang mới hoặc một popup)
-        print("User tapped on location");
-      },
+      onTap: _getCurrentLocation,  // Refresh location khi tap
       child: Row(
         children: [
           Icon(
@@ -85,7 +131,7 @@ class HomeAppBar extends StatelessWidget {
             color: Colors.blueAccent,
           ),
           Text(
-            "HCM, Việt Nam",
+            _currentAddress,
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w500,
