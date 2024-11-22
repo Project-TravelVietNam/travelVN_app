@@ -74,30 +74,50 @@ Future<String?> getToken() async {
 
     try {
       final id = locations[index]['_id'].toString();
+      final bool isCurrentlyFavorite = favoriteLocations.contains(index);
       
-      final response = await http.post(
-        Uri.parse('http://192.168.0.149:8800/v1/favorite'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Cookie': 'access_token=$token',
-        },
-        body: json.encode({
-          'type': selectedCategory == 'Lịch sử' ? 'history' : 
-                  selectedCategory == 'Văn hóa Ẩm thực' ? 'cultural' : 'local',
-          'itemId': id,
-        }),
-      );
+      http.Response response;
+      
+      if (isCurrentlyFavorite) {
+        // Bỏ yêu thích
+        response = await http.delete(
+          Uri.parse('http://10.50.3.235:8800/v1/favorite/$id'),
+          headers: {
+            'Cookie': 'access_token=$token',
+          },
+        );
+      } else {
+        // Thêm yêu thích
+        response = await http.post(
+          Uri.parse('http://10.50.3.235:8800/v1/favorite'),
+          headers: {
+            'Content-Type': 'application/json',
+            'Cookie': 'access_token=$token',
+          },
+          body: json.encode({
+            'type': selectedCategory == 'Lịch sử' ? 'history' : 
+                    selectedCategory == 'Văn hóa Ẩm thực' ? 'cultural' : 'local',
+            'itemId': id,
+          }),
+        );
+      }
 
       if (response.statusCode == 200) {
         setState(() {
-          if (favoriteLocations.contains(index)) {
+          if (isCurrentlyFavorite) {
             favoriteLocations.remove(index);
           } else {
             favoriteLocations.add(index);
           }
         });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(isCurrentlyFavorite ? 'Đã xóa khỏi yêu thích!' : 'Đã thêm vào yêu thích!'),
+          ),
+        );
       } else {
-        throw Exception('Failed to toggle favorite');
+        throw Exception('Failed to toggle favorite: ${response.statusCode}');
       }
     } catch (e) {
       print('Error toggling favorite: $e');

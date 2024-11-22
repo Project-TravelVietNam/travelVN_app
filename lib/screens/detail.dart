@@ -26,42 +26,39 @@ class _DetailState extends State<Detail> {
     super.initState();
     _loadFavoriteStatus();
   }
-  
- Future<void> _loadFavoriteStatus() async {
-  try {
+
+  Future<String?> getToken() async {
     final prefs = await SharedPreferences.getInstance();
-
-    // Lấy danh sách ID yêu thích
-    List<String> favoriteIds = [];
-    final favoritesString = prefs.getString('favorite_places_ids');
-    if (favoritesString != null && favoritesString.isNotEmpty) {
-      favoriteIds = List<String>.from(json.decode(favoritesString));
-    }
-
-    // So sánh ID hiện tại
-    final currentId = widget.location['_id'].toString();
-    final isInFavorites = favoriteIds.contains(currentId);
-
-    // Cập nhật trạng thái yêu thích
-    setState(() {
-      isFavorite = isInFavorites;
-    });
-
-    print("Trạng thái yêu thích cho ID $currentId: $isFavorite");
-  } catch (e) {
-    print("Lỗi khi tải trạng thái yêu thích: $e");
-    setState(() {
-      isFavorite = false;
-    });
+    return prefs.getString('auth_token');
   }
-}
-Future<String?> getToken() async {
-  final prefs = await SharedPreferences.getInstance();
-  return prefs.getString('auth_token');
-}
 
-   Future<void> _toggleFavorite() async {
-    final prefs = await SharedPreferences.getInstance();
+  Future<void> _loadFavoriteStatus() async {
+    final token = await getToken();
+    if (token == null) return;
+
+    try {
+      final response = await http.get(
+        Uri.parse('http://192.168.0.149:8800/v1/favorite'),
+        headers: {
+          'Cookie': 'access_token=$token',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body)['data'];
+        final locals = List<Map<String, dynamic>>.from(data['locals'] ?? []);
+        final currentId = widget.location['_id'].toString();
+        
+        setState(() {
+          isFavorite = locals.any((item) => item['_id'].toString() == currentId);
+        });
+      }
+    } catch (e) {
+      print('Error loading favorite status: $e');
+    }
+  }
+
+  Future<void> _toggleFavorite() async {
     final token = await getToken();
     
     if (token == null) {
@@ -72,41 +69,63 @@ Future<String?> getToken() async {
     }
 
     final id = widget.location['_id'].toString();
-
+    
     try {
-      final response = await http.post(
-        Uri.parse('http://192.168.0.149:8800/v1/favorite'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Cookie': 'access_token=$token',
-        },
-        body: json.encode({
-          'type': 'local',
-          'itemId': id,
-        }),
-      );
-
-      if (response.statusCode == 200) {
-        setState(() {
-          isFavorite = !isFavorite;
-        });
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(isFavorite ? 'Đã thêm vào yêu thích!' : 'Đã xóa khỏi yêu thích!'),
-          ),
+      if (isFavorite) {
+        // Xóa yêu thích
+        final response = await http.delete(
+          Uri.parse('http://192.168.0.149:8800/v1/favorite/$id'),
+          headers: {
+            'Content-Type': 'application/json',
+            'Cookie': 'access_token=$token',
+          },
         );
+        
+        if (response.statusCode == 200) {
+          setState(() {
+            isFavorite = false;
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Đã xóa khỏi yêu thích!')),
+          );
+          // Di chuyển Navigator.pop() vào một Future.delayed
+          Future.delayed(Duration(seconds: 1), () {
+            Navigator.of(context).pop(true);
+          });
+        } else {
+          print('Error response: ${response.body}');
+          throw Exception('Failed to remove from favorites');
+        }
       } else {
-        throw Exception('Failed to toggle favorite');
+        // Thêm yêu thích
+        final response = await http.post(
+          Uri.parse('http://192.168.0.149:8800/v1/favorite'),
+          headers: {
+            'Content-Type': 'application/json',
+            'Cookie': 'access_token=$token',
+          },
+          body: json.encode({
+            'type': 'local',
+            'itemId': id,
+          }),
+        );
+
+        if (response.statusCode == 200) {
+          setState(() {
+            isFavorite = true;
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Đã thêm vào yêu thích!')),
+          );
+        }
       }
     } catch (e) {
       print('Error toggling favorite: $e');
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Có lỗi xảy ra')),
+        SnackBar(content: Text('Có lỗi xảy ra khi thay đổi trạng thái yêu thích')),
       );
     }
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -417,7 +436,7 @@ Future<String?> getToken() async {
         },
         label: Text('Thêm kế hoạch'),
         icon: Icon(Icons.add),
-        backgroundColor: const Color.fromARGB(255, 171, 201, 226), // Đặt màu xanh cho nút
+        backgroundColor: const Color.fromARGB(255, 171, 201, 226), // Đặt màu xanh cho nt
       ),
       bottomNavigationBar: HomeBottomBar(currentIndex: 3),
     );

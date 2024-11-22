@@ -86,9 +86,6 @@ class _DetailCuluralState extends State<DetailCulural> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('Đã xóa khỏi yêu thích!')),
           );
-          if (Navigator.canPop(context)) {
-            Navigator.pop(context, true);
-          }
         }
       } else {
         // Thêm yêu thích
@@ -111,9 +108,6 @@ class _DetailCuluralState extends State<DetailCulural> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('Đã thêm vào yêu thích!')),
           );
-          if (Navigator.canPop(context)) {
-            Navigator.pop(context, true);
-          }
         }
       }
     } catch (e) {
@@ -170,7 +164,6 @@ class _DetailCuluralState extends State<DetailCulural> {
                               ? 'http://192.168.0.149:8800/v1/img/${localData['imgculural'][0]}'
                               : 'https://via.placeholder.com/600',
                         ),
-
                           ),
                           // Nút X để đóng ảnh
                           Positioned(
@@ -426,7 +419,7 @@ class _DetailCuluralState extends State<DetailCulural> {
         },
         label: Text('Thêm kế hoạch'),
         icon: Icon(Icons.add),
-        backgroundColor: const Color.fromARGB(255, 171, 201, 226), // Đặt màu xanh cho n��t
+        backgroundColor: const Color.fromARGB(255, 171, 201, 226), // Đặt màu xanh cho nt
       ),
       bottomNavigationBar: HomeBottomBar(currentIndex: 3),
     );

@@ -36,6 +36,25 @@ class _ProfilePageState extends State<ProfilePage> {
   @override
   void initState() {
     super.initState();
+    checkAuthStatus();
+  }
+
+  Future<void> checkAuthStatus() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? token = prefs.getString('auth_token');
+    
+    if (token == null) {
+      // Sử dụng mounted để tránh lỗi khi widget đã bị dispose
+      if (!mounted) return;
+      
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => SignIn()),
+      );
+      return;
+    }
+    
+    // Nếu có token thì fetch user data
     fetchUserData();
   }
 

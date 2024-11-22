@@ -86,9 +86,6 @@ class _DetailHistoryState extends State<DetailHistory> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('Đã xóa khỏi yêu thích!')),
           );
-          if (Navigator.canPop(context)) {
-            Navigator.pop(context, true);
-          }
         }
       } else {
         // Thêm yêu thích
@@ -111,9 +108,6 @@ class _DetailHistoryState extends State<DetailHistory> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('Đã thêm vào yêu thích!')),
           );
-          if (Navigator.canPop(context)) {
-            Navigator.pop(context, true);
-          }
         }
       }
     } catch (e) {

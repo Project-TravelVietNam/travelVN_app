@@ -5,6 +5,8 @@ import 'package:travelvn/widgets/home_app_bar.dart';
 import 'package:travelvn/widgets/home_bottom_bar.dart';
 import 'package:travelvn/screens/details_Location.dart';
 import 'package:travelvn/screens/detail.dart';
+import 'package:travelvn/screens/detailHistory.dart';
+import 'package:travelvn/screens/detailCulural.dart';
 import 'package:http/http.dart' as http;
 
 class FavoritePage extends StatefulWidget {
@@ -105,7 +107,7 @@ class _FavoritePageState extends State<FavoritePage> {
                         style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                       ),
                       SizedBox(height: 10),
-                      _buildGrid(favoritePlaces),
+                      _buildGrid(favoritePlaces, 'local'),
                       SizedBox(height: 20),
                     ],
                     if (favoriteHistories.isNotEmpty) ...[
@@ -114,7 +116,7 @@ class _FavoritePageState extends State<FavoritePage> {
                         style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                       ),
                       SizedBox(height: 10),
-                      _buildGrid(favoriteHistories),
+                      _buildGrid(favoriteHistories, 'history'),
                       SizedBox(height: 20),
                     ],
                     if (favoriteCulturals.isNotEmpty) ...[
@@ -123,7 +125,7 @@ class _FavoritePageState extends State<FavoritePage> {
                         style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                       ),
                       SizedBox(height: 10),
-                      _buildGrid(favoriteCulturals),
+                      _buildGrid(favoriteCulturals, 'cultural'),
                     ],
                   ],
                 ),
@@ -132,7 +134,7 @@ class _FavoritePageState extends State<FavoritePage> {
     );
   }
 
-  Widget _buildGrid(List<Map<String, dynamic>> items) {
+  Widget _buildGrid(List<Map<String, dynamic>> items, String type) {
     return GridView.builder(
       shrinkWrap: true,
       physics: NeverScrollableScrollPhysics(),
@@ -149,19 +151,37 @@ class _FavoritePageState extends State<FavoritePage> {
           ? 'http://192.168.0.149:8800/v1/img/${place['imgLocal'][0]}'
           : (place['imgHistory'] != null && place['imgHistory'].isNotEmpty)
               ? 'http://192.168.0.149:8800/v1/img/${place['imgHistory'][0]}'
+          : (place['imgculural'] != null && place['imgculural'].isNotEmpty)
+              ? 'http://192.168.0.149:8800/v1/img/${place['imgculural'][0]}'
               : 'https://via.placeholder.com/600';
         
         return GestureDetector(
           onTap: () async {
+            Widget destinationScreen;
+            
+            switch (type) {
+              case 'local':
+                destinationScreen = Detail(location: place);
+                break;
+              case 'history':
+                destinationScreen = DetailHistory(location: place);
+                break;
+              case 'cultural':
+                destinationScreen = DetailCulural(location: place);
+                break;
+              default:
+                destinationScreen = Detail(location: place);
+            }
+
             final needsRefresh = await Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => Detail(location: place),
+                builder: (context) => destinationScreen,
               ),
             );
             
             if (needsRefresh == true) {
-              _loadFavorites();
+              await _loadFavorites();
             }
           },
           child: Stack(
