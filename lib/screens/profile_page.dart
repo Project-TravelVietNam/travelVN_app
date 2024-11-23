@@ -740,22 +740,22 @@ class _ProfilePageState extends State<ProfilePage> {
                                                   ),
                                                 );
                                               },
-                                              icon: Icon(Icons.remove_red_eye_outlined),
-                                              label: Text('Xem chi tiết'),
+                                              icon: Icon(Icons.remove_red_eye_outlined, color: Colors.black), 
+                                              label: Text('Xem chi tiết', style: TextStyle(color: Colors.black)),
                                             ),
                                             TextButton.icon(
                                               onPressed: () {
                                                 // Thêm chức năng like sau
                                               },
-                                              icon: Icon(Icons.favorite_border),
-                                              label: Text('Thích'),
+                                              icon: Icon(Icons.favorite_border, color: Colors.black), 
+                                              label: Text('Thích', style: TextStyle(color: Colors.black)), 
                                             ),
                                             TextButton.icon(
                                               onPressed: () {
                                                 // Thêm chức năng share sau
                                               },
-                                              icon: Icon(Icons.share_outlined),
-                                              label: Text('Chia sẻ'),
+                                              icon: Icon(Icons.share_outlined, color: Colors.black), 
+                                              label: Text('Chia sẻ', style: TextStyle(color: Colors.black)), 
                                             ),
                                           ],
                                         ),
