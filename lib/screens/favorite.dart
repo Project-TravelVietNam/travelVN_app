@@ -36,9 +36,11 @@ class _FavoritePageState extends State<FavoritePage> {
     final token = await getToken();
     
     if (token == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Vui lòng đăng nhập để xem danh sách yêu thích')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Vui lòng đăng nhập để xem danh sách yêu thích')),
+        );
+      }
       return;
     }
 
@@ -53,19 +55,23 @@ class _FavoritePageState extends State<FavoritePage> {
       if (response.statusCode == 200) {
         final Map<String, dynamic> responseData = json.decode(response.body);
         final data = responseData['data'];
-        setState(() {
-          favoritePlaces = List<Map<String, dynamic>>.from(data['locals'] ?? []);
-          favoriteHistories = List<Map<String, dynamic>>.from(data['histories'] ?? []);
-          favoriteCulturals = List<Map<String, dynamic>>.from(data['culturals'] ?? []);
-        });
+        if (mounted) {
+          setState(() {
+            favoritePlaces = List<Map<String, dynamic>>.from(data['locals'] ?? []);
+            favoriteHistories = List<Map<String, dynamic>>.from(data['histories'] ?? []);
+            favoriteCulturals = List<Map<String, dynamic>>.from(data['culturals'] ?? []);
+          });
+        }
       } else {
         throw Exception('Failed to load favorites');
       }
     } catch (e) {
       print('Error loading favorites: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Có lỗi khi tải danh sách yêu thích')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Có lỗi khi tải danh sách yêu thích')),
+        );
+      }
     }
   }
 
