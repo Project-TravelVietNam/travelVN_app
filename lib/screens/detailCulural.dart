@@ -6,6 +6,9 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import 'package:travelvn/screens/map.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
+import 'package:geocoding/geocoding.dart';
 
 class DetailCulural extends StatefulWidget {
   final Map<String, dynamic> location;
@@ -19,11 +22,15 @@ class DetailCulural extends StatefulWidget {
 class _DetailCuluralState extends State<DetailCulural> {
   bool isExpanded = false;
   bool isFavorite = false;
+  List<dynamic> suggestedLocations = [];
+  LatLng? _locationCoordinates;
 
   @override
   void initState() {
     super.initState();
     _loadFavoriteStatus();
+    _fetchSuggestedLocations();
+    _loadLocationCoordinates();
   }
 
   Future<String?> getToken() async {
@@ -117,6 +124,66 @@ class _DetailCuluralState extends State<DetailCulural> {
         SnackBar(content: Text('Có lỗi xảy ra khi thay đổi trạng thái yêu thích')),
       );
     }
+  }
+
+  Future<void> _fetchSuggestedLocations() async {
+    try {
+      final currentRegionName = widget.location['region']['name'];
+      
+      final response = await http.get(
+        Uri.parse('http://192.168.0.149:8800/v1/cultural'),
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        
+        final filtered = (data as List).where((location) {
+          // Kiểm tra null safety
+          if (location == null || 
+              location['region'] == null || 
+              location['region']['name'] == null ||
+              location['_id'] == null) {
+            return false;
+          }
+          
+          return location['region']['name'] == currentRegionName && 
+                 location['_id'] != widget.location['_id'];
+        }).take(5).toList();
+        
+        print("Filtered Locations: ${filtered.length} items");
+        
+        setState(() {
+          suggestedLocations = filtered;
+        });
+      } else {
+        print("API Error Status Code: ${response.statusCode}");
+      }
+    } catch (e) {
+      print('Error fetching suggested locations: $e');
+    }
+  }
+
+  Future<void> _loadLocationCoordinates() async {
+    if (widget.location['address'] != null) {
+      final coordinates = await _getCoordinatesFromAddress(widget.location['address']);
+      if (coordinates != null) {
+        setState(() {
+          _locationCoordinates = coordinates;
+        });
+      }
+    }
+  }
+
+  Future<LatLng?> _getCoordinatesFromAddress(String address) async {
+    try {
+      List<Location> locations = await locationFromAddress(address);
+      if (locations.isNotEmpty) {
+        return LatLng(locations.first.latitude, locations.first.longitude);
+      }
+    } catch (e) {
+      print('Error getting coordinates: $e');
+    }
+    return null;
   }
 
   @override
@@ -392,17 +459,7 @@ class _DetailCuluralState extends State<DetailCulural> {
                 ],
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  Image.asset('assets/images/anh1.png', width: 80, height: 80, fit: BoxFit.cover),
-                  Image.asset('assets/images/anh2.png', width: 80, height: 80, fit: BoxFit.cover),
-                  Image.asset('assets/images/anh3.png', width: 80, height: 80, fit: BoxFit.cover),
-                ],
-              ),
-            ),
+            buildSuggestedLocations(),
             Padding(
               padding: const EdgeInsets.all(16.0),
               child: Text(
@@ -414,14 +471,129 @@ class _DetailCuluralState extends State<DetailCulural> {
             buildCommentSection('Kang Ho', '4 ngày trước', 'assets/images/user2.png', 5, 'I was very happy to be exposed to the culture here.'),
             Padding(
               padding: const EdgeInsets.all(16.0),
-              child: Container(
-                height: 200,
-                decoration: BoxDecoration(
-                  image: DecorationImage(
-                    image: AssetImage('assets/images/bando.png'),
-                    fit: BoxFit.cover,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Vị trí trên bản đồ',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                    ),
                   ),
-                ),
+                  SizedBox(height: 8),
+                  Container(
+                    height: 200,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.grey.withOpacity(0.3),
+                          spreadRadius: 2,
+                          blurRadius: 5,
+                          offset: Offset(0, 3),
+                        ),
+                      ],
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: Stack(
+                        children: [
+                          FlutterMap(
+                            options: MapOptions(
+                              initialCenter: LatLng(16.4637, 107.5909), // Vị trí mặc định
+                              initialZoom: 13.0,
+                            ),
+                            children: [
+                              TileLayer(
+                                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                                userAgentPackageName: 'com.example.app',
+                              ),
+                              MarkerLayer(
+                                markers: [
+                                  Marker(
+                                    point: LatLng(16.4637, 107.5909), // Sẽ được cập nhật từ địa chỉ
+                                    width: 40,
+                                    height: 40,
+                                    child: Icon(
+                                      Icons.location_on,
+                                      color: Colors.red,
+                                      size: 40,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                          Positioned(
+                            bottom: 0,
+                            left: 0,
+                            right: 0,
+                            child: Container(
+                              padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  begin: Alignment.bottomCenter,
+                                  end: Alignment.topCenter,
+                                  colors: [
+                                    Colors.black.withOpacity(0.7),
+                                    Colors.transparent,
+                                  ],
+                                ),
+                              ),
+                              child: Text(
+                                widget.location['address'] ?? 'Chưa có địa chỉ',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 14,
+                                ),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ),
+                          Positioned(
+                            top: 8,
+                            right: 8,
+                            child: GestureDetector(
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => MapScreen(
+                                      searchAddress: widget.location['address'] ?? 'Chưa có địa chỉ',
+                                    ),
+                                  ),
+                                );
+                              },
+                              child: Container(
+                                padding: EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(8),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.2),
+                                      spreadRadius: 1,
+                                      blurRadius: 3,
+                                      offset: Offset(0, 2),
+                                    ),
+                                  ],
+                                ),
+                                child: Icon(
+                                  Icons.open_in_full,
+                                  color: Colors.blue,
+                                  size: 20,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
@@ -529,5 +701,126 @@ class _DetailCuluralState extends State<DetailCulural> {
       
     );
     
+  }
+
+  Widget buildSuggestedLocations() {
+    if (suggestedLocations.isEmpty) {
+      return SizedBox.shrink();
+    }
+
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Địa điểm khác tại ${widget.location['region']['name']}',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Colors.black87,
+            ),
+          ),
+          SizedBox(height: 12),
+          Container(
+            height: 200,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              itemCount: suggestedLocations.length,
+              itemBuilder: (context, index) {
+                final location = suggestedLocations[index];
+                final imageUrl = location['imgculural'] != null && location['imgculural'].isNotEmpty
+                    ? 'http://192.168.0.149:8800/v1/img/${location['imgculural'][0]}'
+                    : 'https://via.placeholder.com/160x120';
+                
+
+                return GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => DetailCulural(location: location),
+                      ),
+                    );
+                  },
+                  child: Container(
+                    width: 160,
+                    margin: EdgeInsets.only(right: 12),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.grey.withOpacity(0.2),
+                          spreadRadius: 1,
+                          blurRadius: 4,
+                          offset: Offset(0, 2),
+                        ),
+                      ],
+                      color: Colors.white,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        ClipRRect(
+                          borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
+                          child: Image.network(
+                            imageUrl,
+                            height: 120,
+                            width: double.infinity,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Container(
+                                height: 120,
+                                color: Colors.grey[200],
+                                child: Icon(Icons.image_not_supported, color: Colors.grey),
+                              );
+                            },
+                          ),
+                        ),
+                        Padding(
+                          padding: EdgeInsets.all(8),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                location['title'] ?? 'Chưa có tiêu đề',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              SizedBox(height: 4),
+                              Row(
+                                children: [
+                                  Icon(Icons.location_on, size: 14, color: Colors.blue),
+                                  SizedBox(width: 4),
+                                  Expanded(
+                                    child: Text(
+                                      location['region']['name'] ?? 'Chưa có khu vực',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.grey[600],
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

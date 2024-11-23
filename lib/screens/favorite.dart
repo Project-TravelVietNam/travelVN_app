@@ -80,147 +80,207 @@ class _FavoritePageState extends State<FavoritePage> {
         preferredSize: Size.fromHeight(90.0),
         child: HomeAppBar(),
       ),
-      bottomNavigationBar: HomeBottomBar(currentIndex: 1),
       body: hasNoFavorites
           ? Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Icons.favorite_border, size: 80, color: Colors.grey),
+                  Icon(Icons.favorite_border, size: 80, color: Colors.red.withOpacity(0.5)),
                   const SizedBox(height: 16),
                   const Text(
-                    'Bạn chưa yêu thích địa điểm nào.',
-                    style: TextStyle(fontSize: 18, color: Colors.grey),
+                    'Bạn chưa yêu thích địa điểm nào',
+                    style: TextStyle(
+                      fontSize: 18,
+                      color: Colors.grey,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Hãy khám phá và lưu lại những địa điểm yêu thích!',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey.shade600,
+                    ),
                   ),
                 ],
               ),
             )
-          : SingleChildScrollView(
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    if (favoritePlaces.isNotEmpty) ...[
-                      Text(
-                        'Địa điểm yêu thích',
-                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                      ),
-                      SizedBox(height: 10),
-                      _buildGrid(favoritePlaces, 'local'),
-                      SizedBox(height: 20),
-                    ],
-                    if (favoriteHistories.isNotEmpty) ...[
-                      Text(
-                        'Di tích lịch sử yêu thích',
-                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                      ),
-                      SizedBox(height: 10),
-                      _buildGrid(favoriteHistories, 'history'),
-                      SizedBox(height: 20),
-                    ],
-                    if (favoriteCulturals.isNotEmpty) ...[
-                      Text(
-                        'Văn hóa ẩm thực yêu thích',
-                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                      ),
-                      SizedBox(height: 10),
-                      _buildGrid(favoriteCulturals, 'cultural'),
-                    ],
-                  ],
+          : CustomScrollView(
+              slivers: [
+                SliverPadding(
+                  padding: const EdgeInsets.all(16.0),
+                  sliver: SliverList(
+                    delegate: SliverChildListDelegate([
+                      if (favoritePlaces.isNotEmpty) ...[
+                        _buildSectionTitle('Địa điểm yêu thích'),
+                        const SizedBox(height: 12),
+                        _buildGrid(favoritePlaces, 'local'),
+                        const SizedBox(height: 24),
+                      ],
+                      if (favoriteHistories.isNotEmpty) ...[
+                        _buildSectionTitle('Di tích lịch sử yêu thích'),
+                        const SizedBox(height: 12),
+                        _buildGrid(favoriteHistories, 'history'),
+                        const SizedBox(height: 24),
+                      ],
+                      if (favoriteCulturals.isNotEmpty) ...[
+                        _buildSectionTitle('Văn hóa ẩm thực yêu thích'),
+                        const SizedBox(height: 12),
+                        _buildGrid(favoriteCulturals, 'cultural'),
+                        const SizedBox(height: 16),
+                      ],
+                    ]),
+                  ),
                 ),
-              ),
+              ],
             ),
+      bottomNavigationBar: HomeBottomBar(currentIndex: 1),
+    );
+  }
+
+  Widget _buildSectionTitle(String title) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: Row(
+        children: [
+          Container(
+            width: 4,
+            height: 24,
+            decoration: BoxDecoration(
+              color: Colors.blue[700],
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: Colors.black87,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
   Widget _buildGrid(List<Map<String, dynamic>> items, String type) {
     return GridView.builder(
       shrinkWrap: true,
-      physics: NeverScrollableScrollPhysics(),
+      physics: const NeverScrollableScrollPhysics(),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
-        crossAxisSpacing: 16.0,
-        mainAxisSpacing: 16.0,
-        childAspectRatio: 0.8,
+        crossAxisSpacing: 12.0,
+        mainAxisSpacing: 12.0,
+        childAspectRatio: 0.85,
       ),
       itemCount: items.length,
       itemBuilder: (context, index) {
         final place = items[index];
-        final imageUrl = (place['imgLocal'] != null && place['imgLocal'].isNotEmpty)
-          ? 'http://192.168.0.149:8800/v1/img/${place['imgLocal'][0]}'
-          : (place['imgHistory'] != null && place['imgHistory'].isNotEmpty)
-              ? 'http://192.168.0.149:8800/v1/img/${place['imgHistory'][0]}'
-          : (place['imgculural'] != null && place['imgculural'].isNotEmpty)
-              ? 'http://192.168.0.149:8800/v1/img/${place['imgculural'][0]}'
-              : 'https://via.placeholder.com/600';
+        final imageUrl = _getImageUrl(place);
         
         return GestureDetector(
-          onTap: () async {
-            Widget destinationScreen;
-            
-            switch (type) {
-              case 'local':
-                destinationScreen = Detail(location: place);
-                break;
-              case 'history':
-                destinationScreen = DetailHistory(location: place);
-                break;
-              case 'cultural':
-                destinationScreen = DetailCulural(location: place);
-                break;
-              default:
-                destinationScreen = Detail(location: place);
-            }
-
-            final needsRefresh = await Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => destinationScreen,
-              ),
-            );
-            
-            if (needsRefresh == true) {
-              await _loadFavorites();
-            }
-          },
-          child: Stack(
-            children: [
-              Container(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(20),
-                  image: DecorationImage(
-                    image: NetworkImage(imageUrl),
+          onTap: () => _navigateToDetail(context, place, type),
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(15),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.1),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(15),
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  Image.network(
+                    imageUrl,
                     fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
+                        color: Colors.grey[200],
+                        child: const Icon(Icons.image_not_supported, color: Colors.grey),
+                      );
+                    },
                   ),
-                ),
-                child: Align(
-                  alignment: Alignment.bottomCenter,
-                  child: Container(
-                    padding: const EdgeInsets.all(8.0),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.4),
-                      borderRadius: const BorderRadius.only(
-                        bottomLeft: Radius.circular(20),
-                        bottomRight: Radius.circular(20),
+                  Positioned(
+                    bottom: 0,
+                    left: 0,
+                    right: 0,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 12.0),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.bottomCenter,
+                          end: Alignment.topCenter,
+                          colors: [
+                            Colors.black.withOpacity(0.8),
+                            Colors.transparent,
+                          ],
+                        ),
+                      ),
+                      child: Text(
+                        place['title'] ?? 'Tên địa điểm không xác định',
+                        textAlign: TextAlign.center,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14.0,
+                        ),
                       ),
                     ),
-                    child: Text(
-                      place['title'] ?? 'Tên địa điểm không xác định',
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16.0,
-                      ),
-                    ),
                   ),
-                ),
+                ],
               ),
-            ],
+            ),
           ),
         );
       },
     );
+  }
+
+  String _getImageUrl(Map<String, dynamic> place) {
+    if (place['imgLocal']?.isNotEmpty == true) {
+      return 'http://192.168.0.149:8800/v1/img/${place['imgLocal'][0]}';
+    } else if (place['imgHistory']?.isNotEmpty == true) {
+      return 'http://192.168.0.149:8800/v1/img/${place['imgHistory'][0]}';
+    } else if (place['imgculural']?.isNotEmpty == true) {
+      return 'http://192.168.0.149:8800/v1/img/${place['imgculural'][0]}';
+    }
+    return 'https://via.placeholder.com/600';
+  }
+
+  Future<void> _navigateToDetail(BuildContext context, Map<String, dynamic> place, String type) async {
+    Widget destinationScreen;
+    switch (type) {
+      case 'local':
+        destinationScreen = Detail(location: place);
+        break;
+      case 'history':
+        destinationScreen = DetailHistory(location: place);
+        break;
+      case 'cultural':
+        destinationScreen = DetailCulural(location: place);
+        break;
+      default:
+        destinationScreen = Detail(location: place);
+    }
+
+    final needsRefresh = await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => destinationScreen),
+    );
+    
+    if (needsRefresh == true) {
+      await _loadFavorites();
+    }
   }
 }

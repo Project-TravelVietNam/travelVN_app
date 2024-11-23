@@ -131,43 +131,48 @@ Future<String?> getToken() async {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: const PreferredSize(
-        preferredSize: Size.fromHeight(100.0),
+        preferredSize: Size.fromHeight(90.0),
         child: HomeAppBar(),
       ),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(height: 10),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 8.0),
             child: Text(
-              "Danh mục địa điểm",
+              "Khám phá địa điểm",
               style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: const Color.fromARGB(255, 0, 0, 0),
+                fontSize: 24,
+                fontWeight: FontWeight.w600,
+                color: Colors.black87,
               ),
             ),
           ),
-          SizedBox(height: 14),
-          Padding(
+          Container(
+            height: 45,
             padding: EdgeInsets.symmetric(horizontal: 16.0),
-            child: SingleChildScrollView(
+            child: ListView.builder(
               scrollDirection: Axis.horizontal,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.start,
-                children: category.map((cat) => Container(
-                  margin: EdgeInsets.only(right: 12),
+              itemCount: category.length,
+              itemBuilder: (context, index) {
+                final cat = category[index];
+                return Padding(
+                  padding: EdgeInsets.only(right: 8.0),
                   child: ChoiceChip(
                     label: Text(
                       cat,
                       style: TextStyle(
-                        color: selectedCategory == cat ? Colors.white : Colors.black,
-                        fontWeight: FontWeight.bold,
+                        color: selectedCategory == cat ? Colors.white : Colors.black87,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                     selected: selectedCategory == cat,
-                    selectedColor: Colors.blueAccent,
+                    selectedColor: Colors.blue[700],
+                    backgroundColor: Colors.grey[100],
+                    padding: EdgeInsets.symmetric(horizontal: 12.0),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
                     onSelected: (selected) {
                       setState(() {
                         selectedCategory = cat;
@@ -178,16 +183,11 @@ Future<String?> getToken() async {
                         });
                       });
                     },
-                    backgroundColor: Colors.grey[200],
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(15),
-                    ),
                   ),
-                )).toList(),
-              ),
+                );
+              },
             ),
           ),
-          SizedBox(height: 15),
           Expanded(
             child: locations.isEmpty
                 ? Center(child: CircularProgressIndicator())
@@ -195,14 +195,13 @@ Future<String?> getToken() async {
                     padding: EdgeInsets.all(16.0),
                     gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: 2,
-                      crossAxisSpacing: 16.0,
-                      mainAxisSpacing: 16.0,
-                      childAspectRatio: 0.9,
+                      crossAxisSpacing: 12.0,
+                      mainAxisSpacing: 12.0,
+                      childAspectRatio: 0.85,
                     ),
                     itemCount: locations.length,
                     itemBuilder: (context, index) {
                       final location = locations[index];
-
                       String imageUrl = '';
                       if (selectedCategory == 'Lịch sử' && location['imgHistory'] != null) {
                         var imgHistory = location['imgHistory'] is List ? location['imgHistory'][0] : location['imgHistory'];
@@ -244,40 +243,64 @@ Future<String?> getToken() async {
                             );
                           }
                         },
-                        child: Stack(
-                          children: [
-                            Container(
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(20),
-                                image: DecorationImage(
-                                  image: NetworkImage(imageUrl),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(15),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.1),
+                                blurRadius: 8,
+                                offset: Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(15),
+                            child: Stack(
+                              fit: StackFit.expand,
+                              children: [
+                                Image.network(
+                                  imageUrl,
                                   fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) {
+                                    return Container(
+                                      color: Colors.grey[200],
+                                      child: Icon(Icons.image_not_supported, color: Colors.grey),
+                                    );
+                                  },
                                 ),
-                              ),
-                              child: Align(
-                                alignment: Alignment.bottomCenter,
-                                child: Container(
-                                  padding: EdgeInsets.all(8.0),
-                                  decoration: BoxDecoration(
-                                    color: Colors.black.withOpacity(0.4),
-                                    borderRadius: BorderRadius.only(
-                                      bottomLeft: Radius.circular(20),
-                                      bottomRight: Radius.circular(20),
+                                Positioned(
+                                  bottom: 0,
+                                  left: 0,
+                                  right: 0,
+                                  child: Container(
+                                    padding: EdgeInsets.symmetric(vertical: 8.0, horizontal: 12.0),
+                                    decoration: BoxDecoration(
+                                      gradient: LinearGradient(
+                                        begin: Alignment.bottomCenter,
+                                        end: Alignment.topCenter,
+                                        colors: [
+                                          Colors.black.withOpacity(0.8),
+                                          Colors.transparent,
+                                        ],
+                                      ),
+                                    ),
+                                    child: Text(
+                                      location['title'] ?? 'Tên địa điểm',
+                                      textAlign: TextAlign.center,
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 14.0,
+                                      ),
                                     ),
                                   ),
-                                  child: Text(
-                                    location['title'] ?? 'Tên địa điểm',
-                                    textAlign: TextAlign.center,
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 16.0,
-                                    ),
-                                  ),
                                 ),
-                              ),
+                              ],
                             ),
-                          ],
+                          ),
                         ),
                       );
                     },
