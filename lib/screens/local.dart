@@ -81,7 +81,7 @@ Future<String?> getToken() async {
       if (isCurrentlyFavorite) {
         // Bỏ yêu thích
         response = await http.delete(
-          Uri.parse('http://10.50.3.235:8800/v1/favorite/$id'),
+          Uri.parse('http://192.168.0.149:8800/v1/favorite/$id'),
           headers: {
             'Cookie': 'access_token=$token',
           },
@@ -89,7 +89,7 @@ Future<String?> getToken() async {
       } else {
         // Thêm yêu thích
         response = await http.post(
-          Uri.parse('http://10.50.3.235:8800/v1/favorite'),
+          Uri.parse('http://192.168.0.149:8800/v1/favorite'),
           headers: {
             'Content-Type': 'application/json',
             'Cookie': 'access_token=$token',

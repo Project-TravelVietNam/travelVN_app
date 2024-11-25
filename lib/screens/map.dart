@@ -269,7 +269,14 @@ class _MapScreenState extends State<MapScreen> {
       children: [
         TileLayer(
           urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-          userAgentPackageName: 'com.example.app',
+          userAgentPackageName: 'com.example.travelVN_app',
+          tileProvider: NetworkTileProvider(),
+          maxZoom: 18,
+          minZoom: 4,
+          additionalOptions: {
+            'useCache': 'true',
+            'secure': 'true',
+          },
         ),
         if (_showRoute && _routePoints.isNotEmpty)
           PolylineLayer(
