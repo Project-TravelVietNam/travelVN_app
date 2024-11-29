@@ -709,6 +709,8 @@ class _ProfilePageState extends State<ProfilePage> {
                                                 fontSize: 18,
                                                 fontWeight: FontWeight.bold,
                                               ),
+                                              maxLines: 1, // Chỉ hiển thị 1 dòng
+                                              overflow: TextOverflow.ellipsis, // Thêm dấu 3 chấm khi vượt quá 1 dòng
                                             ),
                                             SizedBox(height: 8),
                                             Text(

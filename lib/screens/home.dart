@@ -402,11 +402,10 @@ class _HomePageState extends State<HomePage> {
                                       fontWeight: FontWeight.bold,
                                       height: 1.4,
                                     ),
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
+                                    maxLines: 1, // Chỉ hiển thị 1 dòng
+                                    overflow: TextOverflow.ellipsis, // Thêm dấu 3 chấm khi vượt quá 1 dòng
                                   ),
                                   const SizedBox(height: 8),
-
                                   // Content
                                   Text(
                                     post.content,
