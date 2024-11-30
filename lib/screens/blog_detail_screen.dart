@@ -94,7 +94,12 @@ class _BlogDetailScreenState extends State<BlogDetailScreen> {
         return;
       }
 
-      await _blogService.addComment(widget.blogId, _commentController.text);
+      await _blogService.addComment(
+        widget.blogId, 
+        _commentController.text,
+        user['_id'],
+      );
+      
       _commentController.clear();
       await _loadComments();
       

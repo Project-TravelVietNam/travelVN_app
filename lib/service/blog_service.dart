@@ -35,20 +35,21 @@ class BlogService {
     }
   }
 
-  Future<void> addComment(String postId, String comment) async {
+  Future<void> addComment(String postId, String comment, String userId) async {
     try {
       final response = await http.post(
         Uri.parse('$baseUrl/blog/reviews/$postId'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({
-          'userId': 'current_user_id', // Replace with actual user ID
-          'rating': 0,
+          'userId': userId,
+          'rating': 5,
           'comment': comment,
         }),
       );
 
       if (response.statusCode != 201) {
-        throw Exception('Failed to add comment');
+        final errorData = json.decode(response.body);
+        throw Exception(errorData['message'] ?? 'Failed to add comment');
       }
     } catch (e) {
       throw Exception('Error: $e');
@@ -68,22 +69,6 @@ class BlogService {
       throw Exception('Failed to load comments');
     } catch (e) {
       throw Exception('Error: $e');
-    }
-  }
-
-  Future<void> submitComment(String postId, String content) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/blog/reviews/$postId'),
-      headers: {'Content-Type': 'application/json'},
-      body: json.encode({
-        'userId': 'current_user_id', // Replace with actual user ID
-        'rating': 0,
-        'comment': content,
-      }),
-    );
-
-    if (response.statusCode != 201) {
-      throw Exception('Failed to submit comment');
     }
   }
 
