@@ -34,6 +34,9 @@ class _HomePageState extends State<HomePage> {
   final PageController _pageController = PageController();
   int _currentPage = 0; // index hiện tại
 
+  // Thêm biến để lưu trữ số lượng comments
+  Map<String, int> _commentsCount = {};
+
   @override
   void initState() {
     super.initState();
@@ -67,12 +70,29 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
+  // Thêm hàm để load số lượng comments cho mỗi bài viết
+  Future<void> _loadCommentsCount(String postId) async {
+    try {
+      final count = await _blogService.getCommentsCount(postId);
+      setState(() {
+        _commentsCount[postId] = count;
+      });
+    } catch (e) {
+      print('Error loading comments count: $e');
+    }
+  }
+
+  // Cập nhật hàm _loadRecentPosts để load comments count
   Future<void> _loadRecentPosts() async {
     try {
       final posts = await _blogService.getAllPosts();
       setState(() {
         _recentPosts = posts.take(5).toList();
       });
+      // Load comments count cho mỗi bài viết
+      for (var post in _recentPosts) {
+        _loadCommentsCount(post.id);
+      }
     } catch (e) {
       print('Error loading posts: $e');
     }
@@ -465,7 +485,7 @@ class _HomePageState extends State<HomePage> {
                                       ),
                                       _buildActionButton(
                                         icon: Icons.chat_bubble_outline,
-                                        label: post.comments.toString(),
+                                        label: _commentsCount[post.id]?.toString() ?? '0',
                                       ),
                                       _buildActionButton(
                                         icon: Icons.share_outlined,
@@ -655,25 +675,23 @@ class _HomePageState extends State<HomePage> {
   Widget _buildActionButton({
     required IconData icon,
     required String label,
+    VoidCallback? onPressed,
   }) {
-    return Row(
-      children: [
-        Icon(
-          icon,
-          size: 18, // Nhỏ hơn post_card
-          color: Colors.grey[700],
-        ),
-        if (label.isNotEmpty) ...[
+    return InkWell(
+      onTap: onPressed,
+      child: Row(
+        children: [
+          Icon(icon, size: 16, color: Colors.grey[600]),
           const SizedBox(width: 4),
           Text(
             label,
             style: TextStyle(
-              color: Colors.grey[700],
-              fontSize: 12, // Nhỏ hơn post_card
+              fontSize: 12,
+              color: Colors.grey[600],
             ),
           ),
         ],
-      ],
+      ),
     );
   }
 

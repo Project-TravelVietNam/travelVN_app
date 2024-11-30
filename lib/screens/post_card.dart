@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:travelvn/service/blog_service.dart';
 
-class PostCard extends StatelessWidget {
+class PostCard extends StatefulWidget {
   final String username;             // Tên người đăng bài
   final String time;                 // Thời gian đăng bài
   final String title;                // Đổi tên từ content sang title
@@ -16,9 +17,10 @@ class PostCard extends StatelessWidget {
   final VoidCallback? onLike;
   final VoidCallback? onSave;
   final VoidCallback? onShare;
+  final String id; // Thêm id của bài viết
 
   const PostCard({
-    super.key, 
+    Key? key,
     required this.username,
     required this.time,
     required this.title,        // Đổi tên parameter
@@ -34,7 +36,31 @@ class PostCard extends StatelessWidget {
     this.onLike,
     this.onSave,
     this.onShare,
-  });
+    required this.id,
+  }) : super(key: key);
+
+  @override
+  State<PostCard> createState() => _PostCardState();
+}
+
+class _PostCardState extends State<PostCard> {
+  final BlogService _blogService = BlogService();
+  int _commentsCount = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCommentsCount();
+  }
+
+  Future<void> _loadCommentsCount() async {
+    final count = await _blogService.getCommentsCount(widget.id);
+    if (mounted) {
+      setState(() {
+        _commentsCount = count;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -45,7 +71,7 @@ class PostCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
       ),
       child: InkWell(
-        onTap: onTap,
+        onTap: widget.onTap,
         child: Padding(
           padding: const EdgeInsets.all(12),
           child: Column(
@@ -56,7 +82,7 @@ class PostCard extends StatelessWidget {
                 children: [
                   CircleAvatar(
                     radius: 20,
-                    backgroundImage: NetworkImage(profileImageUrl),
+                    backgroundImage: NetworkImage(widget.profileImageUrl),
                     onBackgroundImageError: (e, s) {
                       // Fallback khi load ảnh lỗi
                       const Icon(Icons.person);
@@ -68,14 +94,14 @@ class PostCard extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          username,
+                          widget.username,
                           style: const TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 16,
                           ),
                         ),
                         Text(
-                          time,
+                          widget.time,
                           style: TextStyle(
                             color: Colors.grey[600],
                             fontSize: 14,
@@ -120,7 +146,7 @@ class PostCard extends StatelessWidget {
               
               // Title - Được làm nổi bật
               Text(
-                title,
+                widget.title,
                 style: const TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
@@ -133,7 +159,7 @@ class PostCard extends StatelessWidget {
               
               // Content
               Text(
-                content,
+                widget.content,
                 style: TextStyle(
                   fontSize: 14,
                   color: Colors.grey[800],
@@ -145,11 +171,11 @@ class PostCard extends StatelessWidget {
               const SizedBox(height: 12),
               
               // Image
-              if (imageUrl.isNotEmpty)
+              if (widget.imageUrl.isNotEmpty)
                 ClipRRect(
                   borderRadius: BorderRadius.circular(12),
                   child: Image.network(
-                    imageUrl,
+                    widget.imageUrl,
                     height: 200,
                     width: double.infinity,
                     fit: BoxFit.cover,
@@ -167,11 +193,11 @@ class PostCard extends StatelessWidget {
               const SizedBox(height: 12),
               
               // Hashtags
-              if (hashtags.isNotEmpty)
+              if (widget.hashtags.isNotEmpty)
                 Wrap(
                   spacing: 8,
                   runSpacing: 8,
-                  children: hashtags.map((tag) => Container(
+                  children: widget.hashtags.map((tag) => Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 12,
                       vertical: 6,
@@ -198,18 +224,20 @@ class PostCard extends StatelessWidget {
                   // Like button
                   Expanded(
                     child: _buildActionButton(
-                      icon: isLiked ? Icons.favorite : Icons.favorite_border,
-                      label: likesCount > 0 ? likesCount.toString() : 'Thích',
-                      onPressed: onLike ?? () {},
-                      color: isLiked ? Colors.red : Colors.grey[700],
+                      icon: widget.isLiked ? Icons.favorite : Icons.favorite_border,
+                      label: widget.likesCount > 0 ? widget.likesCount.toString() : 'Thích',
+                      onPressed: widget.onLike ?? () {},
+                      color: widget.isLiked ? Colors.red : Colors.grey[700],
                     ),
                   ),
                   // Comment button
                   Expanded(
                     child: _buildActionButton(
-                      icon: Icons.chat_bubble_outline,
-                      label: commentsCount > 0 ? commentsCount.toString() : '',
-                      onPressed: () {},
+                      icon: Icons.comment_outlined,
+                      label: _commentsCount > 0 ? _commentsCount.toString() : 'Bình luận',
+                      onPressed: () {
+                        // Handle comment
+                      },
                     ),
                   ),
                   // Share button
@@ -217,16 +245,16 @@ class PostCard extends StatelessWidget {
                     child: _buildActionButton(
                       icon: Icons.share_outlined,
                       label: '',
-                      onPressed: onShare ?? () {},
+                      onPressed: widget.onShare ?? () {},
                     ),
                   ),
                   // Save button
                   Expanded(
                     child: _buildActionButton(
-                      icon: isSaved ? Icons.bookmark : Icons.bookmark_border,
+                      icon: widget.isSaved ? Icons.bookmark : Icons.bookmark_border,
                       label: '',
-                      onPressed: onSave ?? () {},
-                      color: isSaved ? Colors.blue : Colors.grey[700],
+                      onPressed: widget.onSave ?? () {},
+                      color: widget.isSaved ? Colors.blue : Colors.grey[700],
                     ),
                   ),
                 ],

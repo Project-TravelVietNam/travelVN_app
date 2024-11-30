@@ -100,6 +100,7 @@ class _BlogPageState extends State<BlogPage> {
                       children: [
                         if (index == 0) const SizedBox(height: 20),
                         PostCard(
+                          id: post.id,
                           username: post.postedBy,
                           time: _getTimeAgo(post.createdAt),
                           title: post.title,
@@ -121,7 +122,6 @@ class _BlogPageState extends State<BlogPage> {
                           isLiked: post.isLiked,
                           isSaved: post.isSaved,
                           likesCount: post.likes,
-                          commentsCount: post.comments,
                         ),
                         const SizedBox(height: 10),
                       ],

@@ -3,6 +3,7 @@ import 'package:travelvn/widgets/home_app_bar.dart';
 import 'package:travelvn/widgets/home_bottom_bar.dart';
 import '../models/blog_post.dart';
 import '../service/blog_service.dart';
+import '../service/auth_service.dart';
 
 class BlogDetailScreen extends StatefulWidget {
   final String blogId;
@@ -18,16 +19,20 @@ class BlogDetailScreen extends StatefulWidget {
 
 class _BlogDetailScreenState extends State<BlogDetailScreen> {
   final BlogService _blogService = BlogService();
+  final AuthService _authService = AuthService();
   BlogPost? _post;
   bool _isLoading = true;
   bool _isContentExpanded = false;
   static const int _maxLines = 5;
   final TextEditingController _commentController = TextEditingController();
+  List<Map<String, dynamic>> _comments = [];
+  bool _isSubmittingComment = false;
 
   @override
   void initState() {
     super.initState();
     _loadPostDetail();
+    _loadComments();
   }
 
   Future<void> _loadPostDetail() async {
@@ -45,6 +50,20 @@ class _BlogDetailScreenState extends State<BlogDetailScreen> {
     }
   }
 
+  Future<void> _loadComments() async {
+    try {
+      final comments = await _blogService.getComments(widget.blogId);
+      setState(() {
+        _comments = comments;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error loading comments: $e')),
+      );
+    }
+  }
+
   String _getTimeAgo(DateTime dateTime) {
     final difference = DateTime.now().difference(dateTime);
     if (difference.inDays > 0) {
@@ -55,6 +74,45 @@ class _BlogDetailScreenState extends State<BlogDetailScreen> {
       return '${difference.inMinutes}m';
     } else {
       return 'just now';
+    }
+  }
+
+  Future<void> _submitComment() async {
+    if (_commentController.text.trim().isEmpty) return;
+    
+    setState(() {
+      _isSubmittingComment = true;
+    });
+    
+    try {
+      final user = await _authService.getUserInfo();
+      if (user == null) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Vui lòng đăng nhập để bình luận')),
+        );
+        return;
+      }
+
+      await _blogService.addComment(widget.blogId, _commentController.text);
+      _commentController.clear();
+      await _loadComments();
+      
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Bình luận đã được thêm thành công')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Lỗi khi gửi bình luận: $e')),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSubmittingComment = false;
+        });
+      }
     }
   }
 
@@ -224,7 +282,7 @@ class _BlogDetailScreenState extends State<BlogDetailScreen> {
                                 ),
                                 _buildActionButton(
                                   icon: Icons.comment_outlined,
-                                  label: '${_post!.comments}',
+                                  label: '${_comments.length}',
                                   onPressed: () {/* Handle comment */},
                                 ),
                                 _buildActionButton(
@@ -252,7 +310,7 @@ class _BlogDetailScreenState extends State<BlogDetailScreen> {
                                 children: [
                                   // Comment header
                                   Text(
-                                    'Bình luận (${_post!.comments})',
+                                    'Bình luận (${_comments.length})',
                                     style: const TextStyle(
                                       fontSize: 18,
                                       fontWeight: FontWeight.bold,
@@ -277,18 +335,13 @@ class _BlogDetailScreenState extends State<BlogDetailScreen> {
                                               contentPadding: EdgeInsets.all(12),
                                             ),
                                             maxLines: null,
+                                            enabled: !_isSubmittingComment,
                                           ),
                                         ),
                                         IconButton(
                                           icon: const Icon(Icons.send),
                                           color: Colors.blue,
-                                          onPressed: () {
-                                            // Handle comment submission
-                                            if (_commentController.text.trim().isNotEmpty) {
-                                              // Add comment logic here
-                                              _commentController.clear();
-                                            }
-                                          },
+                                          onPressed: _isSubmittingComment ? null : _submitComment,
                                         ),
                                       ],
                                     ),
@@ -296,9 +349,15 @@ class _BlogDetailScreenState extends State<BlogDetailScreen> {
                                   const SizedBox(height: 16),
 
                                   // Comments list
-                                  _buildCommentItem(),
-                                  _buildCommentItem(),
-                                  _buildCommentItem(),
+                                  ListView.builder(
+                                    shrinkWrap: true,
+                                    physics: const NeverScrollableScrollPhysics(),
+                                    itemCount: _comments.length,
+                                    itemBuilder: (context, index) {
+                                      final comment = _comments[index];
+                                      return _buildCommentItem(comment);
+                                    },
+                                  ),
                                 ],
                               ),
                             ),
@@ -370,7 +429,7 @@ class _BlogDetailScreenState extends State<BlogDetailScreen> {
     );
   }
 
-  Widget _buildCommentItem() {
+  Widget _buildCommentItem(Map<String, dynamic> comment) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: Row(
@@ -389,16 +448,16 @@ class _BlogDetailScreenState extends State<BlogDetailScreen> {
               children: [
                 Row(
                   children: [
-                    const Text(
-                      'User Name',
-                      style: TextStyle(
+                    Text(
+                      comment['username'] ?? 'Unknown User',
+                      style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 14,
                       ),
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      '2h ago',
+                      _getTimeAgo(DateTime.parse(comment['createdAt'])),
                       style: TextStyle(
                         color: Colors.grey[600],
                         fontSize: 12,
@@ -408,7 +467,7 @@ class _BlogDetailScreenState extends State<BlogDetailScreen> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'This is a sample comment. Replace this with actual comment content from your API.',
+                  comment['comment'] ?? '',
                   style: TextStyle(
                     fontSize: 14,
                     color: Colors.grey[800],
