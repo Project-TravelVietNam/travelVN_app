@@ -9,6 +9,8 @@ import 'package:travelvn/screens/map.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:geocoding/geocoding.dart';
+import '../service/local_service.dart';
+import '../service/auth_service.dart';
 
 class DetailHistory extends StatefulWidget {
   final Map<String, dynamic> location;
@@ -24,6 +26,13 @@ class _DetailHistoryState extends State<DetailHistory> {
   bool isFavorite = false;
   List<dynamic> suggestedLocations = [];
   LatLng? _locationCoordinates;
+  final TextEditingController _reviewController = TextEditingController();
+  List<Map<String, dynamic>> _reviews = [];
+  double _userRating = 5.0;
+  bool _isSubmittingReview = false;
+  bool _isLoadingReviews = false;
+  double _averageRating = 0.0;
+  final AuthService _authService = AuthService();
 
   @override
   void initState() {
@@ -31,6 +40,9 @@ class _DetailHistoryState extends State<DetailHistory> {
     _loadFavoriteStatus();
     _fetchSuggestedLocations();
     _loadLocationCoordinates();
+    _loadReviews().then((_) {
+      _calculateAverageRating();
+    });
   }
 
   Future<String?> getToken() async {
@@ -159,6 +171,309 @@ class _DetailHistoryState extends State<DetailHistory> {
         });
       }
     }
+  }
+
+  Future<void> _loadReviews() async {
+    setState(() {
+      _isLoadingReviews = true;
+    });
+    
+    try {
+      final response = await http.get(
+        Uri.parse('http://192.168.0.149:8800/v1/history/review/all/${widget.location['_id']}'),
+      );
+
+      if (response.statusCode == 200) {
+        final List<dynamic> reviewsData = json.decode(response.body);
+        setState(() {
+          _reviews = List<Map<String, dynamic>>.from(reviewsData);
+        });
+      }
+    } catch (e) {
+      print('Error loading reviews: $e');
+    } finally {
+      setState(() {
+        _isLoadingReviews = false;
+      });
+    }
+  }
+
+  Future<void> _submitReview() async {
+    if (_reviewController.text.trim().isEmpty) return;
+
+    setState(() {
+      _isSubmittingReview = true;
+    });
+
+    try {
+      final user = await _authService.getUserInfo();
+      if (user == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Vui lòng đăng nhập để đánh giá')),
+        );
+        return;
+      }
+
+      final response = await http.post(
+        Uri.parse('http://192.168.0.149:8800/v1/history/reviews/${widget.location['_id']}'),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: json.encode({
+          'userId': user['_id'],
+          'rating': _userRating.round(),
+          'comment': _reviewController.text,
+        }),
+      );
+
+      if (response.statusCode == 201) {
+        _reviewController.clear();
+        await _loadReviews();
+        _calculateAverageRating();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Đánh giá đã được thêm thành công')),
+        );
+      } else {
+        throw Exception(json.decode(response.body)['message']);
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString().replaceAll('Exception: ', ''))),
+      );
+    } finally {
+      setState(() {
+        _isSubmittingReview = false;
+      });
+    }
+  }
+
+  void _calculateAverageRating() {
+    if (_reviews.isEmpty) {
+      _averageRating = 0.0;
+      return;
+    }
+    double total = 0;
+    for (var review in _reviews) {
+      total += (review['rating'] ?? 0).toDouble();
+    }
+    setState(() {
+      _averageRating = total / _reviews.length;
+    });
+  }
+
+  Widget _buildRatingOverview() {
+    return Container(
+      margin: EdgeInsets.all(16),
+      padding: EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: Offset(0, 5),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                _averageRating.toStringAsFixed(1),
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.only(bottom: 1.0),
+                child: Text(
+                  '/5',
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: Colors.grey,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: List.generate(5, (index) {
+              return Icon(
+                index < _averageRating
+                    ? Icons.star
+                    : index < _averageRating + 0.5
+                        ? Icons.star_half
+                        : Icons.star_border,
+                color: Colors.amber,
+                size: 20,
+              );
+            }),
+          ),
+          SizedBox(height: 8),
+          Text(
+            '${_reviews.length} đánh giá',
+            style: TextStyle(
+              fontSize: 16,
+              color: Colors.grey[600],
+            ),
+          ),
+          SizedBox(height: 16),
+          Column(
+            children: [5, 4, 3, 2, 1].map((star) {
+              int count = _reviews.where((r) => (r['rating'] ?? 0) == star).length;
+              double ratio = _reviews.isEmpty ? 0 : count / _reviews.length;
+              return Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: Row(
+                  children: [
+                    Text(
+                      '$star',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    SizedBox(width: 8),
+                    Icon(Icons.star, color: Colors.amber, size: 20),
+                    SizedBox(width: 8),
+                    Expanded(
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: LinearProgressIndicator(
+                          value: ratio,
+                          backgroundColor: Colors.grey[200],
+                          valueColor: AlwaysStoppedAnimation<Color>(Colors.amber),
+                          minHeight: 8,
+                        ),
+                      ),
+                    ),
+                    SizedBox(width: 8),
+                    Text(
+                      '${(ratio * 100).toInt()}%',
+                      style: TextStyle(
+                        color: Colors.grey[600],
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }).toList(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildReviewForm() {
+    return Container(
+      margin: EdgeInsets.symmetric(horizontal: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Tiêu đề và số lượng đánh giá
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Bình luận (${_reviews.length})',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 12),
+          
+          // Rating stars
+          Center(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: List.generate(5, (index) {
+                return GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _userRating = index + 1.0;
+                    });
+                  },
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 4),
+                    child: Icon(
+                      index < _userRating ? Icons.star : Icons.star_border,
+                      size: 32,
+                      color: index < _userRating ? Colors.amber : Colors.grey[400],
+                    ),
+                  ),
+                );
+              }),
+            ),
+          ),
+          SizedBox(height: 12),
+          
+          // Text input field
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              border: Border(
+                bottom: BorderSide(
+                  color: Colors.blue,
+                  width: 1.0,
+                ),
+              ),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _reviewController,
+                    decoration: InputDecoration(
+                      hintText: 'Viết đánh giá...',
+                      border: InputBorder.none,
+                      contentPadding: EdgeInsets.all(12),
+                      hintStyle: TextStyle(
+                        color: Colors.grey[400],
+                        fontSize: 14,
+                      ),
+                    ),
+                    maxLines: null,
+                    enabled: !_isSubmittingReview,
+                  ),
+                ),
+                if (!_isSubmittingReview)
+                  IconButton(
+                    icon: const Icon(Icons.send),
+                    color: Colors.blue,
+                    onPressed: _submitReview,
+                  )
+                else
+                  Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.blue),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -396,54 +711,52 @@ class _DetailHistoryState extends State<DetailHistory> {
                 ],
               ),
             ),
-            SizedBox(height: 30),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '4,7',
-                    style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
-                  ),
-                  SizedBox(width: 8),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: List.generate(5, (index) {
-                          return Icon(Icons.star, color: Colors.blue);
-                        }),
-                      ),
-                      SizedBox(height: 4),
-                      Text('Đánh giá nhận xét'),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-              child: Column(
-                children: [
-                  buildRatingRow(5, 0.85),
-                  buildRatingRow(4, 0.10),
-                  buildRatingRow(3, 0.05),
-                  buildRatingRow(2, 0.0),
-                  buildRatingRow(1, 0.0),
-                ],
-              ),
-            ),
+            SizedBox(height: 10),
             buildSuggestedLocations(),
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Text(
-                'Nhận xét (33)',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            SizedBox(height: 10),
+            if (!_isLoadingReviews) ...[
+              _buildRatingOverview(),
+              SizedBox(height: 10),
+              _buildReviewForm(),
+              SizedBox(height: 10),
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (_reviews.isEmpty)
+                      Center(
+                        child: Text(
+                          'Chưa có đánh giá nào',
+                          style: TextStyle(
+                            color: Colors.grey,
+                            fontSize: 14,
+                          ),
+                        ),
+                      )
+                    else
+                      ListView.builder(
+                        shrinkWrap: true,
+                        physics: NeverScrollableScrollPhysics(),
+                        itemCount: _reviews.length,
+                        itemBuilder: (context, index) {
+                          final review = _reviews[index];
+                          return buildCommentSection(
+                            review['username'] ?? 'Anonymous',
+                            _getTimeAgo(DateTime.parse(review['createdAt'])),
+                            review['rating'] ?? 5,
+                            review['comment'] ?? '',
+                          );
+                        },
+                      ),
+                  ],
+                ),
               ),
-            ),
-            buildCommentSection('Khoai Lang Thang', '3 giờ 15 phut trước', 'assets/images/user1.png', 4, 'Ở đây có rất nhiều địa điểm để khám phá du lịch.'),
-            buildCommentSection('Kang Ho', '4 ngày trước', 'assets/images/user2.png', 5, 'I was very happy to be exposed to the culture here.'),
+            ] else
+              Center(
+                child: CircularProgressIndicator(),
+              ),
+            
             Padding(
               padding: const EdgeInsets.all(16.0),
               child: Column(
@@ -608,49 +921,55 @@ class _DetailHistoryState extends State<DetailHistory> {
     );
   }
 
-  Widget buildCommentSection(String name, String time, String avatarPath, int rating, String comment) {
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Row(
+  Widget buildCommentSection(String name, String time, int rating, String comment) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 16.0),
+      margin: const EdgeInsets.only(bottom: 8.0),
+      decoration: BoxDecoration(
+        color: Colors.grey[50],
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey[200]!),
+      ),
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          ClipOval(
-            child: Image.asset(
-              avatarPath,
-              width: 40,
-              height: 40,
-              fit: BoxFit.cover,
-            ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                name,
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                  color: Colors.black87,
+                ),
+              ),
+              Text(
+                time,
+                style: TextStyle(
+                  color: Colors.grey[600],
+                  fontSize: 12,
+                ),
+              ),
+            ],
           ),
-          SizedBox(width: 8),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Text(
-                      name,
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    SizedBox(width: 8),
-                    Text(
-                      time,
-                      style: TextStyle(color: Colors.black54),
-                    ),
-                  ],
-                ),
-                SizedBox(height: 4),
-                Row(
-                  children: List.generate(rating, (index) {
-                    return Icon(Icons.star, color: Colors.blue);
-                  })..addAll(List.generate(5 - rating, (index) {
-                    return Icon(Icons.star_border, color: Colors.blue);
-                  })),
-                ),
-                SizedBox(height: 4),
-                Text(comment),
-              ],
+          SizedBox(height: 8),
+          Row(
+            children: List.generate(5, (index) {
+              return Icon(
+                index < rating ? Icons.star : Icons.star_border,
+                color: Colors.amber,
+                size: 16,
+              );
+            }),
+          ),
+          SizedBox(height: 8),
+          Text(
+            comment,
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.black87,
+              height: 1.5,
             ),
           ),
         ],
@@ -807,5 +1126,18 @@ class _DetailHistoryState extends State<DetailHistory> {
       print('Error getting coordinates: $e');
     }
     return null;
+  }
+
+  String _getTimeAgo(DateTime dateTime) {
+    final difference = DateTime.now().difference(dateTime);
+    if (difference.inDays > 0) {
+      return '${difference.inDays} ngày trước';
+    } else if (difference.inHours > 0) {
+      return '${difference.inHours} giờ trước';
+    } else if (difference.inMinutes > 0) {
+      return '${difference.inMinutes} phút trước';
+    } else {
+      return 'Vừa xong';
+    }
   }
 }

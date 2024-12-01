@@ -546,38 +546,6 @@ class _ProfilePageState extends State<ProfilePage> {
                           child: TextButton(
                             onPressed: () {
                               setState(() {
-                                selectedTabIndex = 2; // Album
-                              });
-                            },
-                            child: Text(
-                              'Album',
-                              style: TextStyle(
-                                color: selectedTabIndex == 2 ? Colors.blue : Colors.black,
-                                fontWeight: selectedTabIndex == 2 ? FontWeight.bold : FontWeight.normal,
-                              ),
-                            ),
-                          ),
-                        ),
-                        Expanded(
-                          child: TextButton(
-                            onPressed: () {
-                              setState(() {
-                                selectedTabIndex = 3; // Đang theo dõi
-                              });
-                            },
-                            child: Text(
-                              'Đang theo dõi',
-                              style: TextStyle(
-                                color: selectedTabIndex == 3 ? Colors.blue : Colors.black,
-                                fontWeight: selectedTabIndex == 3 ? FontWeight.bold : FontWeight.normal,
-                              ),
-                            ),
-                          ),
-                        ),
-                        Expanded(
-                          child: TextButton(
-                            onPressed: () {
-                              setState(() {
                                 selectedTabIndex = 4; // Viết bài
                               });
                             },
@@ -853,18 +821,6 @@ class _ProfilePageState extends State<ProfilePage> {
                       ],
                     ),
                   )
-              else if (selectedTabIndex == 2)
-                Container(
-                  height: 300,
-                  color: Colors.grey[200],
-                  child: Center(child: Text('Album')),
-                )
-              else if (selectedTabIndex == 3)
-                Container(
-                  height: 300,
-                  color: Colors.grey[200],
-                  child: Center(child: Text('Đang theo dõi')),
-                )
               else if (selectedTabIndex == 4)
                 Padding(
                   padding: const EdgeInsets.all(16.0),
