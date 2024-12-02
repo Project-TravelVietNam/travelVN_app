@@ -550,7 +550,7 @@ class _ProfilePageState extends State<ProfilePage> {
                               });
                             },
                             child: Text(
-                              'Viết bài',
+                              'Bài viết',
                               style: TextStyle(
                                 color: selectedTabIndex == 4 ? Colors.blue : Colors.black,
                                 fontWeight: selectedTabIndex == 4 ? FontWeight.bold : FontWeight.normal,
@@ -586,7 +586,7 @@ class _ProfilePageState extends State<ProfilePage> {
                               });
                             },
                             icon: Icon(Icons.add),
-                            label: Text('Viết bài'),
+                            label: Text('Thêm bài viết'),
                             style: ElevatedButton.styleFrom(
                               foregroundColor: Colors.white,
                               backgroundColor: Colors.blue,
@@ -828,7 +828,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Viết bài',
+                        'Bài viết',
                         style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                       ),
                       SizedBox(height: 20),
