@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 
 class DirectionsSheet extends StatelessWidget {
-  final double totalDistance;
-  final String totalDuration;
-  final List<Map<String, dynamic>> routeSteps;
+  final double totalDistance; //Tổng quãng đường (đơn vị: km).
+  final String totalDuration; //Tổng thời gian di chuyển (đơn vị: phút hoặc giờ).
+  final List<Map<String, dynamic>> routeSteps; //Danh sách các bước chỉ dẫn của lộ trình
 
   const DirectionsSheet({
     super.key,
@@ -14,11 +14,12 @@ class DirectionsSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    //Widget có thể kéo thả để mở rộng hoặc thu nhỏ
     return DraggableScrollableSheet(
       initialChildSize: 0.4,
       minChildSize: 0.2,
       maxChildSize: 0.8,
-      expand: false,
+      expand: false, //Cho phép sheet mở rộng hết màn hình nếu true.
       builder: (context, scrollController) => Container(
         padding: const EdgeInsets.all(16),
         child: Column(

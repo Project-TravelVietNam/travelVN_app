@@ -20,6 +20,7 @@ class _HomeAppBarState extends State<HomeAppBar> {
   }
 
   Future<void> _getCurrentLocation() async {
+    //Lấy tọa độ GPS hiện tại
     try {
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
@@ -39,13 +40,14 @@ class _HomeAppBarState extends State<HomeAppBar> {
           return;
         }
       }
-
+      // Lấy vị trí hiện tại
       final position = await Geolocator.getCurrentPosition();
+      //Chuyển đổi tọa độ thành địa chỉ
       final placemarks = await placemarkFromCoordinates(
         position.latitude,
         position.longitude,
       );
-
+      //Cập nhật địa chỉ trong giao diện
       if (mounted && placemarks.isNotEmpty) {
         final place = placemarks.first;
         setState(() {
@@ -59,6 +61,7 @@ class _HomeAppBarState extends State<HomeAppBar> {
     }
   }
 
+//Hiển thị ở đây
   @override
   Widget build(BuildContext context) {
     return Container(

@@ -67,16 +67,16 @@ class _OnboardingView extends State<OnboardingView> {
                       GestureDetector(
                         onTap: () {
 
-                          Navigator.pushAndRemoveUntil(
-                            context,
-                            MaterialPageRoute(builder: (_) => HomePage()),
-                            (route) => false,
-                          );
                           // Navigator.pushAndRemoveUntil(
                           //   context,
-                          //   MaterialPageRoute(builder: (_) => SignUp()),
+                          //   MaterialPageRoute(builder: (_) => HomePage()),
                           //   (route) => false,
                           // );
+                          Navigator.pushAndRemoveUntil(
+                            context,
+                            MaterialPageRoute(builder: (_) => SignUp()),
+                            (route) => false,
+                          );
                         },
                         // Navigator.pushAndRemoveUntil(
                         //       context,

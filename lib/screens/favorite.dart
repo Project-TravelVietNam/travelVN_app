@@ -3,7 +3,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'package:travelvn/widgets/home_app_bar.dart';
 import 'package:travelvn/widgets/home_bottom_bar.dart';
-import 'package:travelvn/screens/details_Location.dart';
 import 'package:travelvn/screens/detail.dart';
 import 'package:travelvn/screens/detailHistory.dart';
 import 'package:travelvn/screens/detailCulural.dart';

@@ -23,17 +23,27 @@ class MapScreen extends StatefulWidget {
 }
 
 class _MapScreenState extends State<MapScreen> {
-  final MapController _mapController = MapController();
-  LatLng _currentLocation = const LatLng(16.4637, 107.5909);
+  final MapController _mapController = MapController(); //khởi tạo bản đồ
+  //Tọa độ hiện tại được đặt mặc định là Thành phố Hồ Chí Minh
+  LatLng _currentLocation = const LatLng(10.7769, 106.7009);
   bool _isLoading = true;
+  //Điều khiển dữ liệu nhập trong ô tìm kiếm chính
   final TextEditingController _searchController = TextEditingController();
+  // Dùng cho ô tìm kiếm điểm bắt đầu
   final TextEditingController _startSearchController = TextEditingController();
+  //Dùng cho ô tìm kiếm điểm kết thúc
   final TextEditingController _endSearchController = TextEditingController();
+  //Vị trí được chọn hoặc nhập làm điểm bắt đầu
   LatLng? _startLocation;
+  //Vị trí điểm đến được chọn hoặc nhập
   LatLng? _destinationLocation;
+  //Lưu trữ danh sách các tọa độ tạo thành tuyến đường giữa điểm bắt đầu và điểm đến
   List<LatLng> _routePoints = [];
+  //Hiển thị hoặc ẩn tuyến đường
   bool _showRoute = false;
+  //hướng dẫn lộ trình
   List<Map<String, dynamic>> _routeSteps = [];
+  //Tổng quãng đường và thời gian di chuyển
   double _totalDistance = 0;
   String _totalDuration = '';
 
@@ -45,7 +55,9 @@ class _MapScreenState extends State<MapScreen> {
     // Nếu có địa chỉ được truyền vào, tự động điền vào ô tìm kiếm và tìm kiếm
     if (widget.searchAddress != null && widget.searchAddress != 'Chưa có địa chỉ') {
       WidgetsBinding.instance.addPostFrameCallback((_) {
+        //Gán địa chỉ tìm kiếm
         _endSearchController.text = widget.searchAddress!;
+        //Thực hiện tìm kiếm vị trí dựa trên địa chỉ được gán
         _searchEndLocation(widget.searchAddress!);
       });
     }

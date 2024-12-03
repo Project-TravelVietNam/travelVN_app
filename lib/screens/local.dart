@@ -6,7 +6,6 @@ import 'package:travelvn/screens/detailHistory.dart';
 import 'package:travelvn/widgets/home_app_bar.dart';
 import 'package:travelvn/widgets/home_bottom_bar.dart';
 import 'detail.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class LocalPage extends StatefulWidget {
   @override
@@ -17,7 +16,6 @@ class _LocalPageState extends State<LocalPage> {
   final List<String> category = ['Tất cả địa điểm', 'Lịch sử', 'Văn hóa Ẩm thực'];
   String selectedCategory = 'Tất cả địa điểm';
   List<dynamic> locations = [];
-  Set<int> favoriteLocations = {}; // Lưu các địa điểm được yêu thích
 
   Future<List<dynamic>> fetchLocations(String category) async {
     String apiUrl;
@@ -57,74 +55,6 @@ class _LocalPageState extends State<LocalPage> {
         locations = data;
       });
     });
-  }
-Future<String?> getToken() async {
-  final prefs = await SharedPreferences.getInstance();
-  return prefs.getString('auth_token');
-}
-  Future<void> _toggleFavorite(int index) async {
-    final token = await getToken();
-    
-    if (token == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Vui lòng đăng nhập để sử dụng tính năng này')),
-      );
-      return;
-    }
-
-    try {
-      final id = locations[index]['_id'].toString();
-      final bool isCurrentlyFavorite = favoriteLocations.contains(index);
-      
-      http.Response response;
-      
-      if (isCurrentlyFavorite) {
-        // Bỏ yêu thích
-        response = await http.delete(
-          Uri.parse('http://192.168.0.149:8800/v1/favorite/$id'),
-          headers: {
-            'Cookie': 'access_token=$token',
-          },
-        );
-      } else {
-        // Thêm yêu thích
-        response = await http.post(
-          Uri.parse('http://192.168.0.149:8800/v1/favorite'),
-          headers: {
-            'Content-Type': 'application/json',
-            'Cookie': 'access_token=$token',
-          },
-          body: json.encode({
-            'type': selectedCategory == 'Lịch sử' ? 'history' : 
-                    selectedCategory == 'Văn hóa Ẩm thực' ? 'cultural' : 'local',
-            'itemId': id,
-          }),
-        );
-      }
-
-      if (response.statusCode == 200) {
-        setState(() {
-          if (isCurrentlyFavorite) {
-            favoriteLocations.remove(index);
-          } else {
-            favoriteLocations.add(index);
-          }
-        });
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(isCurrentlyFavorite ? 'Đã xóa khỏi yêu thích!' : 'Đã thêm vào yêu thích!'),
-          ),
-        );
-      } else {
-        throw Exception('Failed to toggle favorite: ${response.statusCode}');
-      }
-    } catch (e) {
-      print('Error toggling favorite: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Có lỗi xảy ra')),
-      );
-    }
   }
 
   @override

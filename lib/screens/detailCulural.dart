@@ -23,7 +23,6 @@ class DetailCulural extends StatefulWidget {
 
 class _DetailCuluralState extends State<DetailCulural> {
   bool isExpanded = false;
-  bool isFavorite = false;
   List<dynamic> suggestedLocations = [];
   LatLng? _locationCoordinates;
   final TextEditingController _reviewController = TextEditingController();
@@ -37,105 +36,11 @@ class _DetailCuluralState extends State<DetailCulural> {
   @override
   void initState() {
     super.initState();
-    _loadFavoriteStatus();
     _fetchSuggestedLocations();
     _loadLocationCoordinates();
     _loadReviews().then((_) {
     _calculateAverageRating();
     });
-  }
-
-  Future<String?> getToken() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString('auth_token');
-  }
-
-  Future<void> _loadFavoriteStatus() async {
-    final token = await getToken();
-    if (token == null) return;
-
-    try {
-      final response = await http.get(
-        Uri.parse('http://192.168.0.149:8800/v1/favorite'),
-        headers: {
-          'Cookie': 'access_token=$token',
-        },
-      );
-
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body)['data'];
-        final culturals = List<Map<String, dynamic>>.from(data['culturals'] ?? []);
-        final currentId = widget.location['_id'].toString();
-        
-        setState(() {
-          isFavorite = culturals.any((item) => item['_id'].toString() == currentId);
-        });
-      }
-    } catch (e) {
-      print('Error loading favorite status: $e');
-    }
-  }
-
-  Future<void> _toggleFavorite() async {
-    final token = await getToken();
-    
-    if (token == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Vui lòng đăng nhập để sử dụng tính năng này')),
-      );
-      return;
-    }
-
-    final id = widget.location['_id'].toString();
-    
-    try {
-      if (isFavorite) {
-        // Xóa yêu thích
-        final response = await http.delete(
-          Uri.parse('http://192.168.0.149:8800/v1/favorite/${id}'),
-          headers: {
-            'Content-Type': 'application/json',
-            'Cookie': 'access_token=$token',
-          },
-        );
-        
-        if (response.statusCode == 200) {
-          setState(() {
-            isFavorite = false;
-          });
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Đã xóa khỏi yêu thích!')),
-          );
-        }
-      } else {
-        // Thêm yêu thích
-        final response = await http.post(
-          Uri.parse('http://192.168.0.149:8800/v1/favorite'),
-          headers: {
-            'Content-Type': 'application/json',
-            'Cookie': 'access_token=$token',
-          },
-          body: json.encode({
-            'type': 'cultural',
-            'itemId': id,
-          }),
-        );
-
-        if (response.statusCode == 200) {
-          setState(() {
-            isFavorite = true;
-          });
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Đã thêm vào yêu thích!')),
-          );
-        }
-      }
-    } catch (e) {
-      print('Error toggling favorite: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Có lỗi xảy ra khi thay đổi trạng thái yêu thích')),
-      );
-    }
   }
 
   Future<void> _fetchSuggestedLocations() async {
@@ -613,7 +518,6 @@ class _DetailCuluralState extends State<DetailCulural> {
                     top: 40,
                     right: 20,
                     child: GestureDetector(
-                      onTap: _toggleFavorite,
                       child: Container(
                         padding: EdgeInsets.all(8),
                         decoration: BoxDecoration(
@@ -628,7 +532,7 @@ class _DetailCuluralState extends State<DetailCulural> {
                           ],
                         ),
                         child: Icon(
-                          isFavorite ? Icons.favorite : Icons.favorite_border,
+                          Icons.favorite,
                           color: Colors.red,
                           size: 32,
                         ),
