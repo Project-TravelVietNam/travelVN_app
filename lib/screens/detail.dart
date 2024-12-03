@@ -31,6 +31,7 @@ class _DetailState extends State<Detail> {
   LatLng? _locationCoordinates;
   final LocalService _localService = LocalService();
   final AuthService _authService = AuthService();
+  //đánh giá và bình luận
   final TextEditingController _reviewController = TextEditingController();
   List<Map<String, dynamic>> _reviews = [];
   double _userRating = 5.0;
@@ -44,6 +45,7 @@ class _DetailState extends State<Detail> {
     _loadFavoriteStatus();
     _fetchSuggestedLocations();
     _loadLocationCoordinates();
+    //đánh giá và bình luận
     _loadReviews().then((_) {
       _calculateAverageRating();
     });
@@ -199,6 +201,7 @@ class _DetailState extends State<Detail> {
     return null;
   }
 
+//Load bình luận
   Future<void> _loadReviews() async {
     try {
       final reviews = await _localService.getReviews(widget.location['_id']);
@@ -214,6 +217,7 @@ class _DetailState extends State<Detail> {
     }
   }
 
+//Xử lý gửi bình luận
   Future<void> _submitReview() async {
     if (_reviewController.text.trim().isEmpty) return;
 
@@ -256,6 +260,7 @@ class _DetailState extends State<Detail> {
     }
   }
 
+//Khung hiển thị số sao đánh giá
   Widget _buildRatingOverview() {
     return Container(
       margin: EdgeInsets.all(16),
@@ -368,6 +373,7 @@ class _DetailState extends State<Detail> {
     );
   }
 
+//Khung số sao lựa chọn và viết bình luận
   Widget _buildReviewForm() {
     return Container(
       margin: EdgeInsets.symmetric(horizontal: 16),
@@ -716,6 +722,7 @@ class _DetailState extends State<Detail> {
             ),
             SizedBox(height: 30),
             buildSuggestedLocations(),
+            //Phần bình luận được hiển thị ở đây
             if (!_isLoadingReviews) ...[
               _buildRatingOverview(),
               _buildReviewForm(),
@@ -775,25 +782,21 @@ class _DetailState extends State<Detail> {
     );
   }
   
+  //khung hiển thị số lượng sao trung bình khi bình luận
   Widget buildRatingRow(int starCount, double progress) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 2.0),
       child: Row(
         children: [
+          // Hiển thị số sao
           Text('$starCount'),
           SizedBox(width: 8),
-          Expanded(
-            child: LinearProgressIndicator(
-              value: progress,
-              backgroundColor: Colors.grey[300],
-              color: Colors.blue,
-            ),
-          ),
         ],
       ),
     );
   }
 
+//khung hiển thị nội dung bình luận
   Widget buildCommentSection(String name, String time, int rating, String comment) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 16.0),
@@ -806,6 +809,7 @@ class _DetailState extends State<Detail> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Phần hiển thị tên người dùng và thời gian đánh giá
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -827,6 +831,7 @@ class _DetailState extends State<Detail> {
             ],
           ),
           SizedBox(height: 8),
+          // Phần hiển thị các ngôi sao đánh giá
           Row(
             children: List.generate(5, (index) {
               return Icon(
@@ -837,6 +842,7 @@ class _DetailState extends State<Detail> {
             }),
           ),
           SizedBox(height: 8),
+          // Phần hiển thị nội dung bình luận
           Text(
             comment,
             style: TextStyle(
@@ -1121,6 +1127,7 @@ class _DetailState extends State<Detail> {
     );
   }
 
+//Tính toán thời gian đăng bình luận
   String _getTimeAgo(DateTime dateTime) {
     final difference = DateTime.now().difference(dateTime);
     if (difference.inDays > 0) {
@@ -1133,7 +1140,7 @@ class _DetailState extends State<Detail> {
       return 'Vừa xong';
     }
   }
-
+//Tính trung bình của bình luận
   void _calculateAverageRating() {
     if (_reviews.isEmpty) {
       _averageRating = 0.0;

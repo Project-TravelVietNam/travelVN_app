@@ -27,6 +27,7 @@ class _DetailHistoryState extends State<DetailHistory> {
   List<dynamic> suggestedLocations = [];
   LatLng? _locationCoordinates;
   final TextEditingController _reviewController = TextEditingController();
+  //đánh giá và bình luận
   List<Map<String, dynamic>> _reviews = [];
   double _userRating = 5.0;
   bool _isSubmittingReview = false;
@@ -40,6 +41,7 @@ class _DetailHistoryState extends State<DetailHistory> {
     _loadFavoriteStatus();
     _fetchSuggestedLocations();
     _loadLocationCoordinates();
+    //đánh giá và bình luận
     _loadReviews().then((_) {
       _calculateAverageRating();
     });
@@ -172,7 +174,7 @@ class _DetailHistoryState extends State<DetailHistory> {
       }
     }
   }
-
+//load bình luận
   Future<void> _loadReviews() async {
     setState(() {
       _isLoadingReviews = true;
@@ -197,7 +199,7 @@ class _DetailHistoryState extends State<DetailHistory> {
       });
     }
   }
-
+//Xử lý gửi bình luận
   Future<void> _submitReview() async {
     if (_reviewController.text.trim().isEmpty) return;
 
@@ -246,7 +248,7 @@ class _DetailHistoryState extends State<DetailHistory> {
       });
     }
   }
-
+//Tính trung bình của bình luận
   void _calculateAverageRating() {
     if (_reviews.isEmpty) {
       _averageRating = 0.0;
@@ -260,7 +262,7 @@ class _DetailHistoryState extends State<DetailHistory> {
       _averageRating = total / _reviews.length;
     });
   }
-
+//khung hiển thị số sao đánh giá
   Widget _buildRatingOverview() {
     return Container(
       margin: EdgeInsets.all(16),
@@ -373,6 +375,7 @@ class _DetailHistoryState extends State<DetailHistory> {
     );
   }
 
+//khung số sao lựa chọn và viết bình luận 
   Widget _buildReviewForm() {
     return Container(
       margin: EdgeInsets.symmetric(horizontal: 16),
@@ -714,6 +717,7 @@ class _DetailHistoryState extends State<DetailHistory> {
             SizedBox(height: 10),
             buildSuggestedLocations(),
             SizedBox(height: 10),
+            //Hiển thị lên màn hình các khung đã căn chỉnh từ widget phía trên
             if (!_isLoadingReviews) ...[
               _buildRatingOverview(),
               SizedBox(height: 10),
@@ -901,7 +905,7 @@ class _DetailHistoryState extends State<DetailHistory> {
       bottomNavigationBar: HomeBottomBar(currentIndex: 3),
     );
   }
-  
+  //khung hiển thị số lượng sao trung bình khi bình luận
   Widget buildRatingRow(int starCount, double progress) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 2.0),
@@ -909,18 +913,11 @@ class _DetailHistoryState extends State<DetailHistory> {
         children: [
           Text('$starCount'),
           SizedBox(width: 8),
-          Expanded(
-            child: LinearProgressIndicator(
-              value: progress,
-              backgroundColor: Colors.grey[300],
-              color: Colors.blue,
-            ),
-          ),
         ],
       ),
     );
   }
-
+//khung hiển thị nội dung bình luận
   Widget buildCommentSection(String name, String time, int rating, String comment) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 16.0),
@@ -1128,6 +1125,7 @@ class _DetailHistoryState extends State<DetailHistory> {
     return null;
   }
 
+// Tính toán thời gian đăng bình luận
   String _getTimeAgo(DateTime dateTime) {
     final difference = DateTime.now().difference(dateTime);
     if (difference.inDays > 0) {

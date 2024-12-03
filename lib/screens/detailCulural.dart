@@ -933,13 +933,7 @@ class _DetailCuluralState extends State<DetailCulural> {
         children: [
           Text('$starCount'),
           SizedBox(width: 8),
-          Expanded(
-            child: LinearProgressIndicator(
-              value: progress,
-              backgroundColor: Colors.grey[300],
-              color: Colors.blue,
-            ),
-          ),
+          
         ],
       ),
     );
