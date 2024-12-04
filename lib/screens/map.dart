@@ -77,18 +77,21 @@ class _MapScreenState extends State<MapScreen> {
           throw 'Quyền truy cập vị trí bị từ chối';
         }
       }
-
+      //Lấy vị trí hiện tại
       final position = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high
       );
       
       if (mounted) {
         setState(() {
+          //Cập nhật tọa độ hiện tại với vị trí vừa lấy được
           _currentLocation = LatLng(position.latitude, position.longitude);
           _isLoading = false;
         });
+        //Di chuyển bản đồ đến vị trí mới
         _mapController.move(_currentLocation, 15.0);
       }
+      //xử lý lỗi nếu xảy ra
     } catch (e) {
       if (mounted) {
         setState(() => _isLoading = false);
@@ -99,11 +102,15 @@ class _MapScreenState extends State<MapScreen> {
     }
   }
 
+//tìm kiếm tọa với một địa chỉ cụ thể, cập nhật vị trí đích trên bản đồ và vẽ tuyến đường nếu có điểm bắt đầu.
   Future<void> _searchEndLocation(String address) async {
     try {
       setState(() => _isLoading = true);
+      //Tìm kiếm vị trí từ địa chỉ
       List<Location> locations = await locationFromAddress(address);
+      //Kiểm tra kết quả tìm kiếm
       if (locations.isNotEmpty && mounted) {
+        //Cập nhật vị trí đích
         setState(() {
           _destinationLocation = LatLng(
             locations.first.latitude,
@@ -112,17 +119,20 @@ class _MapScreenState extends State<MapScreen> {
           _showRoute = false;
           _routePoints.clear();
         });
-        _mapController.move(_destinationLocation!, 15.0);
+        _mapController.move(_destinationLocation!, 15.0); //Di chuyển bản đồ
+        //Vẽ tuyến đường (nếu có điểm bắt đầu)
         if (_startLocation != null) {
           await _getRoute();
         }
       }
+      //xử lý ngoại lệ
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Không tìm thấy địa điểm')),
         );
       }
+      //Hoàn tất xử lý
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -133,6 +143,7 @@ class _MapScreenState extends State<MapScreen> {
     try {
       setState(() => _isLoading = true);
       List<Location> locations = await locationFromAddress(address);
+      //Kiểm tra và cập nhật vị trí bắt đầu
       if (locations.isNotEmpty && mounted) {
         setState(() {
           _startLocation = LatLng(
@@ -144,7 +155,7 @@ class _MapScreenState extends State<MapScreen> {
         });
         _mapController.move(_startLocation!, 15.0);
         if (_destinationLocation != null) {
-          await _getRoute();
+          await _getRoute(); //để tính toán và hiển thị tuyến đường từ vị trí bắt đầu đến đích.
         }
       }
     } catch (e) {
@@ -158,7 +169,9 @@ class _MapScreenState extends State<MapScreen> {
     }
   }
 
+//Tìm và hiển thị tuyến đường
   Future<void> _getRoute() async {
+    //Kiểm tra đầu vào
     if (_startLocation == null || _destinationLocation == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Vui lòng nhập cả điểm bắt đầu và điểm đến')),
@@ -168,31 +181,40 @@ class _MapScreenState extends State<MapScreen> {
 
     try {
       setState(() => _isLoading = true);
-
+//Gửi yêu cầu HTTP đến OSRM, lấy dữ liệu tuyến đường từ API OSRM
       final response = await http.get(Uri.parse(
-        'http://router.project-osrm.org/route/v1/driving/'
-        '${_startLocation!.longitude},${_startLocation!.latitude};'
-        '${_destinationLocation!.longitude},${_destinationLocation!.latitude}'
-        '?overview=full&geometries=geojson&steps=true'
+        'http://router.project-osrm.org/route/v1/driving/' //Chỉ định chế độ lái xe.
+        '${_startLocation!.longitude},${_startLocation!.latitude};' //Tọa độ điểm bắt đầu
+        '${_destinationLocation!.longitude},${_destinationLocation!.latitude}' // '' đến
+        '?overview=full&geometries=geojson&steps=true' //Bao gồm toàn bộ tuyến đường, ạng GeoJSON, các bước chỉ dẫn chi tiết
       ));
 
+//Xử lý phản hồi thành công
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         final route = data['routes'][0];
+        //Danh sách các tọa độ của tuyến đường.
         final List<dynamic> coordinates = route['geometry']['coordinates'];
+        //Danh sách các bước hướng dẫn trong lộ trình
         final List<dynamic> steps = route['legs'][0]['steps'];
-        
+        //Tổng quãng đường (đơn vị: km)
         final distance = route['distance'] / 1000;
+        // Thời gian di chuyển (đơn vị: phút).
         final duration = route['duration'] / 60;
 
-        setState(() {
+//Cập nhật thông tin và bản đồ
+        setState(() { //Gọi setState để làm mới giao diện người dùng
+          //sử dụng để vẽ đường đi trên bản đồ
           _routePoints = coordinates
               .map((coord) => LatLng(coord[1].toDouble(), coord[0].toDouble()))
               .toList();
+          //Hiển thị tuyến đường trên bản đồ
           _showRoute = true;
+          //Cập nhật khoảng cách và thời gian
           _totalDistance = distance;
           _totalDuration = '${duration.round()} phút';
           
+          //Chỉ dẫn chi tiết
           _routeSteps = steps.map<Map<String, dynamic>>((step) {
             return {
               'instruction': step['maneuver']['type'],
@@ -202,7 +224,9 @@ class _MapScreenState extends State<MapScreen> {
           }).toList();
         });
 
-        final bounds = LatLngBounds.fromPoints(_routePoints);
+//Điều chỉnh phạm vi bản đồ
+        final bounds = LatLngBounds.fromPoints(_routePoints); //Tạo giới hạn bản đồ từ tuyến đường
+        //Điều chỉnh camera của bản đồ để phù hợp với một vùng cụ thể
         _mapController.fitCamera(
           CameraFit.bounds(
             bounds: bounds,
@@ -223,7 +247,7 @@ class _MapScreenState extends State<MapScreen> {
     try {
       final String googleMapsUrl = 
         'https://www.google.com/maps/search/?api=1&query=${_currentLocation.latitude},${_currentLocation.longitude}';
-      await Share.shareUri(Uri.parse(googleMapsUrl));
+      await Share.shareUri(Uri.parse(googleMapsUrl)); //Chia sẻ URL dưới dạng một liên kết
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Không thể chia sẻ vị trí: ${e.toString()}')),
@@ -236,8 +260,10 @@ class _MapScreenState extends State<MapScreen> {
       context: context,
       isScrollControlled: true,
       builder: (context) => DirectionsSheet(
+        //Hiển thị khoảng cách và thời gian tổng cộng
         totalDistance: _totalDistance,
         totalDuration: _totalDuration,
+        //Hiển thị các bước hướng dẫn lộ trình
         routeSteps: _routeSteps,
       ),
     );
@@ -272,6 +298,7 @@ class _MapScreenState extends State<MapScreen> {
   }
 
   Widget _buildMap() {
+    //Tạo bản đồ bằng FlutterMap
     return FlutterMap(
       mapController: _mapController,
       options: MapOptions(
@@ -279,9 +306,11 @@ class _MapScreenState extends State<MapScreen> {
         initialZoom: 13.0,
       ),
       children: [
+        //Lớp bản đồ nền
         TileLayer(
           urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
           userAgentPackageName: 'com.example.travelVN_app',
+          //Cung cấp các ô bản đồ qua mạng
           tileProvider: NetworkTileProvider(),
           maxZoom: 18,
           minZoom: 4,
@@ -290,7 +319,9 @@ class _MapScreenState extends State<MapScreen> {
             'secure': 'true',
           },
         ),
+        //Lớp vẽ tuyến đường
         if (_showRoute && _routePoints.isNotEmpty)
+        //Vẽ một đường kết nối các điểm
           PolylineLayer(
             polylines: [
               Polyline(
@@ -300,6 +331,7 @@ class _MapScreenState extends State<MapScreen> {
               ),
             ],
           ),
+        //Lớp đánh dấu vị trí
         MarkerLayer(
           markers: [
             LocationMarker(
@@ -380,11 +412,12 @@ class _MapScreenState extends State<MapScreen> {
                   const SnackBar(content: Text('Vui lòng nhập cả điểm bắt đầu và điểm đến')),
                 );
               }
-            : _getRoute,
+            : _getRoute, //tính toán và hiển thị tuyến đường
           label: const Text('Tìm đường'),
           icon: const Icon(Icons.directions),
           heroTag: 'findRoute',
         ),
+        //Hiển thị hướng dẫn
         if (_showRoute)
           ...[
             const SizedBox(width: 8),

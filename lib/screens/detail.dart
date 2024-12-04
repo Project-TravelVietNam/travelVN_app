@@ -27,6 +27,7 @@ class Detail extends StatefulWidget {
 class _DetailState extends State<Detail> {
   bool isExpanded = false;
   List<dynamic> suggestedLocations = [];
+  //bản đồ
   LatLng? _locationCoordinates;
   final LocalService _localService = LocalService();
   final AuthService _authService = AuthService();
@@ -42,6 +43,7 @@ class _DetailState extends State<Detail> {
   void initState() {
     super.initState();
     _fetchSuggestedLocations();
+    //bản đồ
     _loadLocationCoordinates();
     //đánh giá và bình luận
     _loadReviews().then((_) {
@@ -76,6 +78,7 @@ class _DetailState extends State<Detail> {
     }
   }
 
+//Lấy địa chỉ từ API và xác định trên bản đồ
   Future<void> _loadLocationCoordinates() async {
     if (widget.location['address'] != null) {
       final coordinates = await _getCoordinatesFromAddress(widget.location['address']);
@@ -87,6 +90,7 @@ class _DetailState extends State<Detail> {
     }
   }
 
+//chuyển đổi một địa chỉ thành tọa độ
   Future<LatLng?> _getCoordinatesFromAddress(String address) async {
     try {
       List<Location> locations = await locationFromAddress(address);
@@ -893,6 +897,7 @@ class _DetailState extends State<Detail> {
     );
   }
 
+//Bản đồ
   Widget _buildMapPreview() {
     return Padding(
       padding: const EdgeInsets.all(16.0),
@@ -927,7 +932,7 @@ class _DetailState extends State<Detail> {
                 children: [
                   FlutterMap(
                     options: MapOptions(
-                      initialCenter: _locationCoordinates ?? LatLng(16.4637, 107.5909),
+                      initialCenter: _locationCoordinates ?? LatLng(10.7769, 106.7009),
                       initialZoom: 13.0,
                     ),
                     children: [
@@ -939,7 +944,7 @@ class _DetailState extends State<Detail> {
                         MarkerLayer(
                           markers: [
                             Marker(
-                              point: _locationCoordinates!,
+                              point: LatLng(10.7769, 106.7009), // Sẽ được cập nhật từ địa chỉ
                               width: 40,
                               height: 40,
                               child: Icon(

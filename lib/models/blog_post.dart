@@ -1,3 +1,4 @@
+//Hiển thị dữ liệu trên UI, Xử lý dữ liệu API
 class BlogPost {
   final String id;
   final String title;
@@ -36,8 +37,8 @@ class BlogPost {
       createdAt: DateTime.parse(json['createdAt'] ?? DateTime.now().toIso8601String()),
       likes: json['likes']?.length ?? 0,
       comments: json['comments']?.length ?? 0,
-      isLiked: false, // You can update this based on user's like status
-      isSaved: false, // You can update this based on user's save status
+      isLiked: false, 
+      isSaved: false, 
     );
   }
 } 

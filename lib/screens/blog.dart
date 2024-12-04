@@ -26,9 +26,12 @@ class _BlogPageState extends State<BlogPage> {
 
   Future<void> _loadPosts() async {
     try {
+      // Gọi API để lấy dữ liệu
       final posts = await _blogService.getAllPosts();
       setState(() {
+        // Cập nhật danh sách bài viết
         _posts = posts;
+        // Kết thúc trạng thái loading
         _isLoading = false;
       });
     } catch (e) {
@@ -55,8 +58,7 @@ class _BlogPageState extends State<BlogPage> {
 
   // void _handleLike(String postId) async {
   //   try {
-  //     await _blogService.likePost(postId);
-  //     await _loadPosts(); // Reload posts to update like status
+  //     
   //   } catch (e) {
   //     ScaffoldMessenger.of(context).showSnackBar(
   //       SnackBar(content: Text('Error liking post: $e')),
@@ -66,8 +68,7 @@ class _BlogPageState extends State<BlogPage> {
 
   // void _handleSave(String postId) async {
   //   try {
-  //     await _blogService.savePost(postId);
-  //     await _loadPosts(); // Reload posts to update save status
+  //     
   //   } catch (e) {
   //     ScaffoldMessenger.of(context).showSnackBar(
   //       SnackBar(content: Text('Error saving post: $e')),
@@ -89,7 +90,7 @@ class _BlogPageState extends State<BlogPage> {
       body: _isLoading 
           ? const Center(child: CircularProgressIndicator())
           : RefreshIndicator(
-              onRefresh: _loadPosts,
+              onRefresh: _loadPosts,  //kéo để làm mới danh sách hiển thị
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16.0),
                 child: ListView.builder(
@@ -99,7 +100,8 @@ class _BlogPageState extends State<BlogPage> {
                     return Column(
                       children: [
                         if (index == 0) const SizedBox(height: 20),
-                        PostCard(
+                        //bài viết được hiển thị thông qua một widget PostCard
+                        PostCard( 
                           id: post.id,
                           username: post.postedBy,
                           time: _getTimeAgo(post.createdAt),

@@ -24,6 +24,7 @@ class DetailHistory extends StatefulWidget {
 class _DetailHistoryState extends State<DetailHistory> {
   bool isExpanded = false;
   List<dynamic> suggestedLocations = [];
+  //bản đồ
   LatLng? _locationCoordinates;
   final TextEditingController _reviewController = TextEditingController();
   //đánh giá và bình luận
@@ -38,6 +39,7 @@ class _DetailHistoryState extends State<DetailHistory> {
   void initState() {
     super.initState();
     _fetchSuggestedLocations();
+    //bản đồ
     _loadLocationCoordinates();
     //đánh giá và bình luận
     _loadReviews().then((_) {
@@ -68,7 +70,7 @@ class _DetailHistoryState extends State<DetailHistory> {
       print('Error fetching suggested locations: $e');
     }
   }
-
+//Lấy địa chỉ từ API và xác định trên bản đồ
   Future<void> _loadLocationCoordinates() async {
     if (widget.location['address'] != null) {
       final coordinates = await _getCoordinatesFromAddress(widget.location['address']);
@@ -698,7 +700,7 @@ class _DetailHistoryState extends State<DetailHistory> {
                         children: [
                           FlutterMap(
                             options: MapOptions(
-                              initialCenter: LatLng(16.4637, 107.5909), // Vị trí mặc định
+                              initialCenter: LatLng(10.7769, 106.7009), // Vị trí mặc định
                               initialZoom: 13.0,
                             ),
                             children: [
@@ -709,7 +711,7 @@ class _DetailHistoryState extends State<DetailHistory> {
                               MarkerLayer(
                                 markers: [
                                   Marker(
-                                    point: LatLng(16.4637, 107.5909), // Sẽ được cập nhật từ địa chỉ
+                                    point: LatLng(10.7769, 106.7009), // Sẽ được cập nhật từ địa chỉ
                                     width: 40,
                                     height: 40,
                                     child: Icon(
@@ -1017,6 +1019,7 @@ class _DetailHistoryState extends State<DetailHistory> {
     );
   }
 
+//Xác định vị trí địa điểm trên bản đồ
   Future<LatLng?> _getCoordinatesFromAddress(String address) async {
     try {
       List<Location> locations = await locationFromAddress(address);

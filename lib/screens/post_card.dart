@@ -44,15 +44,18 @@ class PostCard extends StatefulWidget {
 }
 
 class _PostCardState extends State<PostCard> {
-  final BlogService _blogService = BlogService();
+  // gọi API từ lớp BlogService để lấy số lượng bình luận
+  final BlogService _blogService = BlogService(); 
   int _commentsCount = 0;
 
   @override
   void initState() {
     super.initState();
+    //tải số lượng bình luận từ API
     _loadCommentsCount();
   }
-
+  
+//Lấy số lượng bình luận của bài viết từ API
   Future<void> _loadCommentsCount() async {
     final count = await _blogService.getCommentsCount(widget.id);
     if (mounted) {

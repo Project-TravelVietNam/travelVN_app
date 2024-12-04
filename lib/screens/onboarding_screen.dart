@@ -35,7 +35,7 @@ class _OnboardingView extends State<OnboardingView> {
     return Scaffold(
       body: Stack(
         children: [
-          // PageView
+          // PageView để chuyển đổi các màn hình
           PageView.builder(
             itemCount: onboarding.length,
             onPageChanged: (value) {
@@ -88,7 +88,8 @@ class _OnboardingView extends State<OnboardingView> {
                           //   context,
                           //   MaterialPageRoute(builder: (_) => HomePage()),
                           // ); //nếu muốn chạy các trang khác thì có thể đóng trang home này nha
-                       
+                        
+                        //Styling cho nút skip
                         child: Container(
                           padding: EdgeInsets.symmetric(
                             horizontal: size.width * 0.04,
@@ -129,7 +130,8 @@ class _OnboardingView extends State<OnboardingView> {
                     ),
                   ),
                   SizedBox(height: size.height * 0.04),
-                  // "Get Started"
+                  
+                  // "Get Started" (sắp xếp phần dưới màn hình từ text giới thiệu)
                   Align(
                     alignment: Alignment.bottomCenter,
                     child: SizedBox(
@@ -151,9 +153,7 @@ class _OnboardingView extends State<OnboardingView> {
                               ),
                             ),
                             const SizedBox(height: 5),
-                            const SizedBox(
-                                height:
-                                    20), // Added extra space between elements
+                            const SizedBox(height: 20), // Added extra space between elements
                             Expanded(
                               flex: 4, // 40% height for button
                               child: GestureDetector(
@@ -249,7 +249,7 @@ class _OnboardingView extends State<OnboardingView> {
   }
 }
 
-// Model class for onboarding screens
+// Model class for onboarding screens (Quản lý các dữ liệu trong onboarding)
 class OnboardingScreen {
   String images;
 

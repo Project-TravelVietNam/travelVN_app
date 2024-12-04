@@ -22,11 +22,11 @@ class _BlogDetailScreenState extends State<BlogDetailScreen> {
   final AuthService _authService = AuthService();
   BlogPost? _post;
   bool _isLoading = true;
-  bool _isContentExpanded = false;
-  static const int _maxLines = 5;
-  final TextEditingController _commentController = TextEditingController();
-  List<Map<String, dynamic>> _comments = [];
-  bool _isSubmittingComment = false;
+  bool _isContentExpanded = false; // thu gọn hoặc mở rộng nội dung 
+  static const int _maxLines = 5; //nội dung hiển thị tối đa 5 dòng 
+  final TextEditingController _commentController = TextEditingController(); //lấy giá trị từ ô nhập bình luận
+  List<Map<String, dynamic>> _comments = []; //lưu trữ danh sách các bình luận liên quan đến bài viết
+  bool _isSubmittingComment = false; //gửi bình luận true, gửi thành công false
 
   @override
   void initState() {
@@ -35,11 +35,15 @@ class _BlogDetailScreenState extends State<BlogDetailScreen> {
     _loadComments();
   }
 
+//xử lý việc tải chi tiết bài viết từ API
   Future<void> _loadPostDetail() async {
     try {
+      //lấy thông tin blogId từ BlogService
       final post = await _blogService.getPostDetail(widget.blogId);
       setState(() {
+        //cập nhật giá trị của _post để lưu trữ dữ liệu bài viết 
         _post = post;
+        //thông báo việc tải dữ liệu đã hoàn thành
         _isLoading = false;
       });
     } catch (e) {
@@ -50,6 +54,7 @@ class _BlogDetailScreenState extends State<BlogDetailScreen> {
     }
   }
 
+//Xử lý việc tải bình luận từ API
   Future<void> _loadComments() async {
     try {
       final comments = await _blogService.getComments(widget.blogId);
@@ -77,6 +82,7 @@ class _BlogDetailScreenState extends State<BlogDetailScreen> {
     }
   }
 
+//Xử lý gửi bình luận
   Future<void> _submitComment() async {
     if (_commentController.text.trim().isEmpty) return;
     
@@ -86,6 +92,7 @@ class _BlogDetailScreenState extends State<BlogDetailScreen> {
     
     try {
       final user = await _authService.getUserInfo();
+      //ktra xem người dùng đã đăng nhập chưa 
       if (user == null) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
@@ -93,14 +100,16 @@ class _BlogDetailScreenState extends State<BlogDetailScreen> {
         );
         return;
       }
-
+      //Gửi bình luận
       await _blogService.addComment(
         widget.blogId, 
         _commentController.text,
         user['_id'],
       );
       
-      _commentController.clear();
+      //gửi xong thì mấy cái ô này nó trông lại như ban đầu nè
+      _commentController.clear(); 
+      //Danh sách bình luận đc cập nhật
       await _loadComments();
       
       if (!mounted) return;
@@ -115,6 +124,7 @@ class _BlogDetailScreenState extends State<BlogDetailScreen> {
     } finally {
       if (mounted) {
         setState(() {
+          //trạng thái ==> false, người dùng biết rằng việc gửi bình luận đã hoàn tất
           _isSubmittingComment = false;
         });
       }
@@ -150,7 +160,7 @@ class _BlogDetailScreenState extends State<BlogDetailScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Hero Image
+                  // Hiển thị Image
                   if (_post!.image.isNotEmpty)
                     AspectRatio(
                       aspectRatio: 16 / 9,
@@ -346,6 +356,7 @@ class _BlogDetailScreenState extends State<BlogDetailScreen> {
                                         IconButton(
                                           icon: const Icon(Icons.send),
                                           color: Colors.blue,
+                                          //bấm vô nút này bình luận sẽ đc xử lý 
                                           onPressed: _isSubmittingComment ? null : _submitComment,
                                         ),
                                       ],
@@ -360,7 +371,7 @@ class _BlogDetailScreenState extends State<BlogDetailScreen> {
                                     itemCount: _comments.length,
                                     itemBuilder: (context, index) {
                                       final comment = _comments[index];
-                                      return _buildCommentItem(comment);
+                                      return _buildCommentItem(comment); //bình luận được hiện ở đây
                                     },
                                   ),
                                 ],

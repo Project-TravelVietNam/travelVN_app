@@ -24,7 +24,9 @@ class DetailCulural extends StatefulWidget {
 class _DetailCuluralState extends State<DetailCulural> {
   bool isExpanded = false;
   List<dynamic> suggestedLocations = [];
+  //bản đồ
   LatLng? _locationCoordinates;
+  //đánh giá và bình luận
   final TextEditingController _reviewController = TextEditingController();
   List<Map<String, dynamic>> _reviews = [];
   double _userRating = 5.0;
@@ -37,7 +39,9 @@ class _DetailCuluralState extends State<DetailCulural> {
   void initState() {
     super.initState();
     _fetchSuggestedLocations();
+    //bản đồ
     _loadLocationCoordinates();
+    //đánh giá và bình luận
     _loadReviews().then((_) {
     _calculateAverageRating();
     });
@@ -718,7 +722,7 @@ class _DetailCuluralState extends State<DetailCulural> {
                         children: [
                           FlutterMap(
                             options: MapOptions(
-                              initialCenter: LatLng(16.4637, 107.5909), // Vị trí mặc định
+                              initialCenter: LatLng(10.7769, 106.7009), // Vị trí mặc định
                               initialZoom: 13.0,
                             ),
                             children: [
@@ -729,7 +733,7 @@ class _DetailCuluralState extends State<DetailCulural> {
                               MarkerLayer(
                                 markers: [
                                   Marker(
-                                    point: LatLng(16.4637, 107.5909), // Sẽ được cập nhật từ địa chỉ
+                                    point: LatLng(10.7769, 106.7009), // Sẽ được cập nhật từ địa chỉ
                                     width: 40,
                                     height: 40,
                                     child: Icon(

@@ -144,6 +144,9 @@ class _SearchPageState extends State<SearchPage> {
                                           'region': item['region'],
                                           'content': item['content'],
                                           'address': item['address'],
+                                          'reviews': item['reviews'] ?? [], 
+                                          'rating': item['rating'] ?? 0.0, 
+                                          'numReviews': item['numReviews'] ?? 0,
                                         }
 
                                       ),
